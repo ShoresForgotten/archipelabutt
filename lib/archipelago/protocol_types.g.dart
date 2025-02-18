@@ -16,6 +16,7 @@ NetworkPlayer _$NetworkPlayerFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$NetworkPlayerToJson(NetworkPlayer instance) =>
     <String, dynamic>{
+      'class': instance.classKey,
       'team': instance.team,
       'slot': instance.slot,
       'alias': instance.alias,
@@ -31,6 +32,7 @@ NetworkItem _$NetworkItemFromJson(Map<String, dynamic> json) => NetworkItem(
 
 Map<String, dynamic> _$NetworkItemToJson(NetworkItem instance) =>
     <String, dynamic>{
+      'class': instance.classKey,
       'item': instance.item,
       'location': instance.location,
       'player': instance.player,
@@ -181,6 +183,7 @@ NetworkVersion _$NetworkVersionFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$NetworkVersionToJson(NetworkVersion instance) =>
     <String, dynamic>{
+      'class': instance.classKey,
       'major': instance.major,
       'minor': instance.minor,
       'build': instance.build,
@@ -197,6 +200,7 @@ NetworkSlot _$NetworkSlotFromJson(Map<String, dynamic> json) => NetworkSlot(
 
 Map<String, dynamic> _$NetworkSlotToJson(NetworkSlot instance) =>
     <String, dynamic>{
+      'class': instance.classKey,
       'name': instance.name,
       'game': instance.game,
       'type': instance.type.toJson(),
@@ -220,6 +224,7 @@ Hint _$HintFromJson(Map<String, dynamic> json) => Hint(
 );
 
 Map<String, dynamic> _$HintToJson(Hint instance) => <String, dynamic>{
+  'class': instance.classKey,
   'receivingPlayer': instance.receivingPlayer,
   'findingPlayer': instance.findingPlayer,
   'location': instance.location,
@@ -228,4 +233,41 @@ Map<String, dynamic> _$HintToJson(Hint instance) => <String, dynamic>{
   'entrance': instance.entrance,
   'flags': instance.flags.toJson(),
   'status': _$HintStatusEnumMap[instance.status]!,
+};
+
+DataPackageContents _$DataPackageContentsFromJson(Map<String, dynamic> json) =>
+    DataPackageContents(
+      (json['games'] as Map<String, dynamic>).map(
+        (k, e) => MapEntry(k, GameData.fromJson(e as Map<String, dynamic>)),
+      ),
+    );
+
+Map<String, dynamic> _$DataPackageContentsToJson(
+  DataPackageContents instance,
+) => <String, dynamic>{
+  'games': instance.games.map((k, e) => MapEntry(k, e.toJson())),
+};
+
+GameData _$GameDataFromJson(Map<String, dynamic> json) => GameData(
+  Map<String, int>.from(json['item_name_to_id'] as Map),
+  Map<String, int>.from(json['location_name_to_id'] as Map),
+  json['checksum'] as String,
+);
+
+Map<String, dynamic> _$GameDataToJson(GameData instance) => <String, dynamic>{
+  'item_name_to_id': instance.itemNameToId,
+  'location_name_to_id': instance.locationNameToId,
+  'checksum': instance.checksum,
+};
+
+DeathLink _$DeathLinkFromJson(Map<String, dynamic> json) => DeathLink(
+  PythonTime.fromJson((json['time'] as num).toDouble()),
+  json['source'] as String,
+  json['cause'] as String?,
+);
+
+Map<String, dynamic> _$DeathLinkToJson(DeathLink instance) => <String, dynamic>{
+  'time': instance.time.toJson(),
+  'cause': instance.cause,
+  'source': instance.source,
 };

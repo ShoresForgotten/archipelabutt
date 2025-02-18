@@ -1,8 +1,6 @@
 /// Common or elaborate data types used in the archipelago network protocol.
 library;
 
-import 'dart:js_interop';
-
 import 'package:json_annotation/json_annotation.dart';
 
 part 'protocol_types.g.dart';
@@ -10,6 +8,9 @@ part 'protocol_types.g.dart';
 /// Information about a player in a session.
 @JsonSerializable()
 final class NetworkPlayer {
+  @JsonKey(name: 'class', includeToJson: true)
+  final String classKey = 'NetworkPlayer';
+
   /// Team to which the player belongs. Starts at 0.
   final int team;
 
@@ -23,7 +24,7 @@ final class NetworkPlayer {
   final String name;
   const NetworkPlayer(this.team, this.slot, this.alias, this.name);
 
-  factory NetworkPlayer.fromJSON(Map<String, dynamic> json) =>
+  factory NetworkPlayer.fromJson(Map<String, dynamic> json) =>
       _$NetworkPlayerFromJson(json);
 
   Map<String, dynamic> toJson() => _$NetworkPlayerToJson(this);
@@ -32,6 +33,9 @@ final class NetworkPlayer {
 /// Information about an item.
 @JsonSerializable(explicitToJson: true)
 final class NetworkItem {
+  @JsonKey(name: 'class', includeToJson: true)
+  final String classKey = 'NetworkItem';
+
   /// Item ID of the item. Within the of -2^53 + 1 to 2^53 -1, inclusive.
   /// Values below 0 are reserved for Archipelago use.
   final int item;
@@ -110,18 +114,20 @@ final class NetworkItemFlags {
 /// Part of a message sent with PrintJSON.
 sealed class JSONMessagePart {
   final String text;
+
   const JSONMessagePart(this.text);
+
+  Map<String, dynamic> toJson();
 
   factory JSONMessagePart.fromJson(Map<String, dynamic> json) {
     String type = json['type'];
-    String text = json['text'];
     switch (type) {
       case 'text':
-        return TextMessagePart(text);
+        return TextMessagePart.fromJson(json);
       case 'player_id':
-        return PlayerIDMessagePart(text);
+        return PlayerIDMessagePart.fromJson(json);
       case 'player_name':
-        return PlayerNameMessagePart(text);
+        return PlayerNameMessagePart.fromJson(json);
       case 'item_id':
         return ItemIDMessagePart.fromJson(json);
       case 'item_name':
@@ -131,7 +137,7 @@ sealed class JSONMessagePart {
       case 'location_name':
         return LocationNameMessagePart.fromJson(json);
       case 'entrance_name':
-        return EntranceNameMessagePart(text);
+        return EntranceNameMessagePart.fromJson(json);
       case 'hint_status':
         return HintStatusMessagePart.fromJson(json);
       case 'color':
@@ -146,7 +152,13 @@ sealed class JSONMessagePart {
 @JsonSerializable()
 final class TextMessagePart extends JSONMessagePart {
   final String type = 'text';
+
   const TextMessagePart(super.text);
+
+  factory TextMessagePart.fromJson(Map<String, dynamic> json) =>
+      _$TextMessagePartFromJson(json);
+
+  @override
   Map<String, dynamic> toJson() => _$TextMessagePartToJson(this);
 }
 
@@ -154,7 +166,13 @@ final class TextMessagePart extends JSONMessagePart {
 @JsonSerializable()
 final class PlayerIDMessagePart extends JSONMessagePart {
   final String type = 'player_id';
+
   const PlayerIDMessagePart(super.text);
+
+  factory PlayerIDMessagePart.fromJson(Map<String, dynamic> json) =>
+      _$PlayerIDMessagePartFromJson(json);
+
+  @override
   Map<String, dynamic> toJson() => _$PlayerIDMessagePartToJson(this);
 }
 
@@ -162,7 +180,13 @@ final class PlayerIDMessagePart extends JSONMessagePart {
 @JsonSerializable()
 final class PlayerNameMessagePart extends JSONMessagePart {
   final String type = 'player_name';
+
   const PlayerNameMessagePart(super.text);
+
+  factory PlayerNameMessagePart.fromJson(Map<String, dynamic> json) =>
+      _$PlayerNameMessagePartFromJson(json);
+
+  @override
   Map<String, dynamic> toJson() => _$PlayerNameMessagePartToJson(this);
 }
 
@@ -175,10 +199,11 @@ final class ItemIDMessagePart extends JSONMessagePart {
 
   const ItemIDMessagePart(super.text, this.flags, this.player);
 
-  Map<String, dynamic> toJson() => _$ItemIDMessagePartToJson(this);
-
   factory ItemIDMessagePart.fromJson(Map<String, dynamic> json) =>
       _$ItemIDMessagePartFromJson(json);
+
+  @override
+  Map<String, dynamic> toJson() => _$ItemIDMessagePartToJson(this);
 }
 
 /// Text contains an item name. Not currently used.
@@ -190,10 +215,11 @@ final class ItemNameMessagePart extends JSONMessagePart {
 
   const ItemNameMessagePart(super.text, this.flags, this.player);
 
-  Map<String, dynamic> toJson() => _$ItemNameMessagePartToJson(this);
-
   factory ItemNameMessagePart.fromJson(Map<String, dynamic> json) =>
       _$ItemNameMessagePartFromJson(json);
+
+  @override
+  Map<String, dynamic> toJson() => _$ItemNameMessagePartToJson(this);
 }
 
 /// Text contains a location id, should be resolved to a name.
@@ -204,10 +230,11 @@ final class LocationIDMessagePart extends JSONMessagePart {
 
   const LocationIDMessagePart(super.text, this.player);
 
-  Map<String, dynamic> toJson() => _$LocationIDMessagePartToJson(this);
-
   factory LocationIDMessagePart.fromJson(Map<String, dynamic> json) =>
       _$LocationIDMessagePartFromJson(json);
+
+  @override
+  Map<String, dynamic> toJson() => _$LocationIDMessagePartToJson(this);
 }
 
 /// Text contains a location name. Not currently used.
@@ -218,10 +245,11 @@ final class LocationNameMessagePart extends JSONMessagePart {
 
   const LocationNameMessagePart(super.text, this.player);
 
-  Map<String, dynamic> toJson() => _$LocationNameMessagePartToJson(this);
-
   factory LocationNameMessagePart.fromJson(Map<String, dynamic> json) =>
       _$LocationNameMessagePartFromJson(json);
+
+  @override
+  Map<String, dynamic> toJson() => _$LocationNameMessagePartToJson(this);
 }
 
 /// Text contains an entrance name. No id mapping.
@@ -231,6 +259,10 @@ final class EntranceNameMessagePart extends JSONMessagePart {
 
   const EntranceNameMessagePart(super.text);
 
+  factory EntranceNameMessagePart.fromJson(Map<String, dynamic> json) =>
+      _$EntranceNameMessagePartFromJson(json);
+
+  @override
   Map<String, dynamic> toJson() => _$EntranceNameMessagePartToJson(this);
 }
 
@@ -242,6 +274,7 @@ final class HintStatusMessagePart extends JSONMessagePart {
 
   const HintStatusMessagePart(super.text, this.status);
 
+  @override
   Map<String, dynamic> toJson() => _$HintStatusMessagePartToJson(this);
 
   factory HintStatusMessagePart.fromJson(Map<String, dynamic> json) =>
@@ -256,6 +289,7 @@ final class ColorMessagePart extends JSONMessagePart {
 
   const ColorMessagePart(super.text, this.color);
 
+  @override
   Map<String, dynamic> toJson() => _$ColorMessagePartToJson(this);
 
   factory ColorMessagePart.fromJson(Map<String, dynamic> json) =>
@@ -318,6 +352,8 @@ enum ClientStatus {
 /// A version of software. Used to communicate Archipelago versions.
 @JsonSerializable()
 final class NetworkVersion {
+  @JsonKey(name: 'class', includeToJson: true)
+  final String classKey = 'Version';
   final int major;
   final int minor;
   final int build;
@@ -362,6 +398,8 @@ final class SlotType {
 /// Static information about a slot.
 @JsonSerializable(explicitToJson: true)
 final class NetworkSlot {
+  @JsonKey(name: 'class', includeToJson: true)
+  final String classKey = 'NetworkSlot';
   final String name;
   final String game;
   final SlotType type;
@@ -392,6 +430,8 @@ enum Permission {
 /// Hint information.
 @JsonSerializable(explicitToJson: true)
 final class Hint {
+  @JsonKey(name: 'class', includeToJson: true)
+  final String classKey = 'Hint';
   final int receivingPlayer;
   final int findingPlayer;
   final int location;
@@ -417,30 +457,37 @@ final class Hint {
   Map<String, dynamic> toJson() => _$HintToJson(this);
 }
 
+@JsonSerializable(explicitToJson: true)
 final class DataPackageContents {
-  // TODO: Data Package Contents
-  // https://github.com/ArchipelagoMW/Archipelago/blob/main/docs/network%20protocol.md#data-package-contents
+  final Map<String, GameData> games;
+
+  DataPackageContents(this.games);
+
+  factory DataPackageContents.fromJson(Map<String, dynamic> json) =>
+      _$DataPackageContentsFromJson(json);
+
+  Map<String, dynamic> toJson() => _$DataPackageContentsToJson(this);
 }
 
-@JsonEnum(valueField: 'name')
-enum Tag {
-  ap("AP", true),
-  deathlink("DeathLink", true),
-  hintgame("HintGame", false),
-  tracker("Tracker", false),
-  textonly("TextOnly", false),
-  notext("NoText", true);
+@JsonSerializable(fieldRename: FieldRename.snake)
+final class GameData {
+  final Map<String, int> itemNameToId;
+  final Map<String, int> locationNameToId;
+  final String checksum;
 
-  final String name;
-  final bool needsGame;
+  GameData(this.itemNameToId, this.locationNameToId, this.checksum);
 
-  const Tag(this.name, this.needsGame);
+  factory GameData.fromJson(Map<String, dynamic> json) =>
+      _$GameDataFromJson(json);
+
+  Map<String, dynamic> toJson() => _$GameDataToJson(this);
 }
 
 /// Deathlink information.
+@JsonSerializable(explicitToJson: true)
 final class DeathLink {
   /// Time of death.
-  final DateTime time;
+  final PythonTime time;
 
   /// Optional cause of death.
   final String? cause;
@@ -449,17 +496,17 @@ final class DeathLink {
   final String source;
   const DeathLink(this.time, this.source, [this.cause]);
 
-  factory DeathLink.fromJson(Map<String, dynamic> json) {
-    double timeFloat = json['time'];
-    DateTime time = DateTime.fromMillisecondsSinceEpoch(
-      timeFloat.floor() * 1000,
-    );
-    String source = json['source'];
-    String? cause = json['cause'];
-    if (cause == null || cause == "") {
-      return DeathLink(time, source);
-    } else {
-      return DeathLink(time, source, cause);
-    }
-  }
+  Map<String, dynamic> toJson() => _$DeathLinkToJson(this);
+
+  factory DeathLink.fromJson(Map<String, dynamic> json) =>
+      _$DeathLinkFromJson(json);
+}
+
+/// Wrapper class for DateTime to handle (de)serialization to floating point.
+final class PythonTime {
+  final DateTime time;
+  PythonTime(this.time);
+  double toJson() => (time.millisecondsSinceEpoch / 1000).toDouble();
+  factory PythonTime.fromJson(double value) =>
+      PythonTime(DateTime.fromMillisecondsSinceEpoch((value * 1000).floor()));
 }

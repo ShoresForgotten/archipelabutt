@@ -38,6 +38,7 @@ dependencies:
   web_socket_channel: ^2.4.5
   json_serializable: ^6.9.4
   json_annotation: ^4.9.0
+  uuid: ^4.5.1
 
 dev_dependencies:
   flutter_test:
