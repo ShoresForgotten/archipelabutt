@@ -1,200 +1,378 @@
 library;
 
+import 'dart:collection';
+
 import 'package:uuid/uuid.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
-import 'client_to_server.dart';
+import 'client_to_server.dart' as client;
 import 'protocol_types.dart';
-import 'server_to_client.dart';
+import 'server_to_client.dart' as server;
 
-abstract class _ArchipelagoGlobal {
-  static Uuid? _uuidGenerator;
+/// Controller class for an Archipelago connection.
+/// Encapsulates all the state required for an Archipelago connection.
+final class ArchipelagoClient {
+  final _ArchipelagoConnection _connection;
+  final _ArchipelagoClientInfo _currentClientInfo;
+  final _ArchipelagoRoomInfo _currentRoomInfo;
+  final int team;
+  final int slot;
+  final List<int> missingLocations;
+  final List<int> checkedLocations;
+  final Map<String, dynamic>? slotData;
+  final Map<int, NetworkSlot> slotInfo;
+  int hintPoints;
 
-  static String generateUUID() {
-    _ArchipelagoGlobal._uuidGenerator ??= Uuid();
-    return _uuidGenerator!.v4();
-  }
+  final server.RoomInfo _roomInfo;
 
-  static NetworkVersion get supportedVersion {
-    return NetworkVersion(0, 5, 1);
-  }
-}
-
-class ConnectionInfo {
-  final String _address;
-  final int _port;
-  final String _userName;
-  final String _password;
-  final String? _game;
-  final List<String> _tags;
-  final ItemsHandlingFlags _itemFlags;
-  final bool _receiveSlotData;
-  final bool _getDataPackage;
-
-  ConnectionInfo._(
-    this._address,
-    this._port,
-    this._userName,
-    this._password,
-    this._game,
-    this._tags,
-    this._itemFlags,
-    this._receiveSlotData,
-    this._getDataPackage,
-  );
-
-  factory ConnectionInfo({
-    required String address,
-    required int port,
-    required String userName,
-    String password = '',
-    String? game,
-    List<String>? tags,
-    bool receiveOtherWorlds = false,
-    bool receiveOwnWorld = false,
-    bool receiveStartingInventory = false,
-    bool receiveSlotData = false,
-    bool getDataPackage = false,
-  }) {
-    if (game == null &&
-        (tags == null ||
-            !tags.contains('HintGame') ||
-            !tags.contains('Tracker') ||
-            !tags.contains('TextOnly'))) {
-      throw 'Tags must contain HintGame, Tracker, or TextOnly if game is null';
-    }
-    if ((receiveOwnWorld || receiveStartingInventory) && receiveOtherWorlds) {
-      throw 'Receiving from other worlds must be enabled to receive items from own world';
-    }
-    return ConnectionInfo._(
-      address,
-      port,
-      userName,
-      password,
-      game,
-      tags ?? [],
-      ItemsHandlingFlags(
-        receiveOtherWorlds,
-        receiveOwnWorld,
-        receiveStartingInventory,
-      ),
-      receiveSlotData,
-      getDataPackage,
-    );
-  }
-}
-
-class ArchipelagoConnection {
-  final WebSocketChannel _channel;
-  final Stream<ServerMessage> _messages;
-  final WebSocketSink _sink;
-  final String _clientUUID;
-  final ConnectionInfo _connectionInfo;
-  final RoomInfo _roomInfo;
-
-  Stream<ServerMessage> get stream => _messages;
   Permission get releasePermission => _roomInfo.release;
   Permission get collectPermission => _roomInfo.collect;
   Permission get remainingPermission => _roomInfo.remaining;
   List<String> get roomTags => _roomInfo.tags;
   int get hintCost => _roomInfo.hintCost;
 
-  ArchipelagoConnection._(
-    this._channel,
-    this._messages,
-    this._sink,
-    this._clientUUID,
-    this._connectionInfo,
+  List<String> get clientTags => _currentClientInfo.tags;
+
+  bool get receiveOtherWorld => _currentClientInfo.receiveOtherWorld;
+  bool get receiveOwnWorld => _currentClientInfo.receiveOwnWorld;
+  bool get receiveStartingInventory =>
+      _currentClientInfo.receiveStartingInventory;
+
+  ArchipelagoClient._(
+    this._connection,
+    this._currentClientInfo,
+    this._currentRoomInfo,
     this._roomInfo,
+    this.team,
+    this.slot,
+    this.missingLocations,
+    this.checkedLocations,
+    this.slotData,
+    this.slotInfo,
+    this.hintPoints,
   );
 
-  static Future<ArchipelagoConnection> connect(
-    ConnectionInfo connectionInfo,
-  ) async {
-    final uuid = _ArchipelagoGlobal.generateUUID();
-    final uri = Uri(
-      host: connectionInfo._address,
-      port: connectionInfo._port,
-      scheme: 'ws',
-    );
-    final channel = WebSocketChannel.connect(uri);
-    final stream =
-        channel.stream
-            .map((event) => ServerMessage.fromJson(event))
-            .asBroadcastStream();
-    await channel.ready;
-    final WebSocketSink sink = channel.sink;
-    int handshakeLength;
-    RoomInfo roomInfo;
-    (handshakeLength, roomInfo) = await _handshake(
-      stream,
-      sink,
-      connectionInfo,
-    );
-    return ArchipelagoConnection._(
-      channel,
-      stream.skip(handshakeLength),
-      sink,
-      uuid,
-      connectionInfo,
-      roomInfo,
+  static Future<ArchipelagoClient> connect(
+    ArchipelagoClientSettings clientSettings,
+    ArchipelagoConnectionSettings connectionSettings, [
+    DataPackageHandler? dataPackageHandler,
+  ]) async {
+    final connection = await _ArchipelagoConnection.connect(connectionSettings);
+    final stream = connection.stream;
+    server.RoomInfo? roomInfo;
+    server.DataPackage? dataPackage;
+    server.ServerMessage? connected;
+    _HandshakeStep handShakeStep = _HandshakeStep.roomInfo;
+  }
+
+  /// Apply a RoomUpdate message.
+  /// This has to be done manually, as there's no nice, universal way to do this and notify any dependents, so the user just has to solve it on their own.
+  void updateRoomInfo(server.RoomUpdate update) {
+    final players = update.players;
+    final checkedLocations = update.checkedLocations;
+    if (players != null) {
+      _currentRoomInfo.updatePlayerList(players);
+    }
+    if (checkedLocations != null) {
+      _currentRoomInfo.updateCheckedLocations(checkedLocations);
+    }
+  }
+}
+
+enum _HandshakeStep { roomInfo, dataPackage, connection }
+
+/// Globally available utilities for Archipelago connections.
+abstract class _ArchipelagoGlobal {
+  /// Hold onto the UUID generator.
+  static Uuid? _uuidGenerator;
+
+  /// Generate a UUID
+  static String generateUUID() {
+    _ArchipelagoGlobal._uuidGenerator ??= Uuid();
+    return _uuidGenerator!.v4();
+  }
+
+  /// The supported version of Archipelago
+  static NetworkVersion get supportedVersion {
+    return NetworkVersion(0, 5, 1);
+  }
+}
+
+/// User-facing connection settings.
+/// While these settings required aren't enough to do anything alone, they are the ones more likely to change regularly.
+class ArchipelagoConnectionSettings {
+  final Uri uri;
+  final String userName;
+  final String password;
+
+  ArchipelagoConnectionSettings._(this.uri, this.userName, this.password);
+
+  factory ArchipelagoConnectionSettings({
+    required String address,
+    required int port,
+    required String userName,
+    String password = '',
+  }) {
+    final uri = Uri(host: address, port: port, scheme: 'ws');
+
+    return ArchipelagoConnectionSettings._(uri, userName, password);
+  }
+}
+
+/// Application-facing connection settings.
+/// [ArchipelagoConnectionSettings] are still required to do anything, but these are settings typically set by the application and not changed by the user.
+class ArchipelagoClientSettings {
+  final String? game;
+  final List<String> tags;
+  final client.ItemsHandlingFlags itemFlags;
+  final bool receiveSlotData;
+
+  const ArchipelagoClientSettings._(
+    this.game,
+    this.tags,
+    this.itemFlags,
+    this.receiveSlotData,
+  );
+
+  factory ArchipelagoClientSettings({
+    String? game,
+    List<String>? tags,
+    bool receiveOtherWorlds = false,
+    bool receiveOwnWorld = false,
+    bool receiveStartingInventory = false,
+    bool receiveSlotData = false,
+  }) {
+    if (game == null &&
+        (tags == null ||
+            !tags.contains('HintGame') ||
+            !tags.contains('Tracker') ||
+            !tags.contains('TextOnly'))) {
+      throw Error();
+    }
+    if ((receiveOwnWorld || receiveStartingInventory) && receiveOtherWorlds) {
+      throw Error();
+    }
+    return ArchipelagoClientSettings._(
+      game,
+      tags ?? [],
+      client.ItemsHandlingFlags(
+        receiveOtherWorlds,
+        receiveOwnWorld,
+        receiveStartingInventory,
+      ),
+      receiveSlotData,
     );
   }
 
-  static Future<(int handshakeLength, RoomInfo roomInfo)> _handshake(
-    Stream<ServerMessage> stream,
-    WebSocketSink sink,
-    ConnectionInfo connectionInfo,
+  const ArchipelagoClientSettings.constConstructor(
+    this.game,
+    this.tags,
+    this.itemFlags,
+    this.receiveSlotData,
+  );
+}
+
+class _ArchipelagoConnection {
+  final WebSocketChannel _channel;
+  final WebSocketSink _sink;
+  final Stream<server.ServerMessage> stream;
+  final String clientUUID;
+  final ArchipelagoConnectionSettings connectionInfo;
+
+  _ArchipelagoConnection._(
+    this._channel,
+    this._sink,
+    this.stream,
+    this.clientUUID,
+    this.connectionInfo,
+  );
+
+  static Future<_ArchipelagoConnection> connect(
+    ArchipelagoConnectionSettings connectionInfo,
   ) async {
+    // TODO: Rewrite this
+    final channel = WebSocketChannel.connect(connectionInfo.uri);
+    // Get the stream from the socket, interpret the packets, and make it a broadcast.
+    final stream =
+        channel.stream
+            .map((event) => server.ServerMessage.fromJson(event))
+            .asBroadcastStream();
+    // Wait until it's actually ready
+    await channel.ready;
+
+    final WebSocketSink sink = channel.sink;
+
+    final uuid = _ArchipelagoGlobal.generateUUID();
+
+    return _ArchipelagoConnection._(
+      channel,
+      sink,
+      stream,
+      uuid,
+      connectionInfo,
+    );
+  }
+
+  Future<ArchipelagoClient> handshake([
+    DataPackageHandler? dataPackageHandler,
+  ]) async {
+    // We need to keep track of how many of the first messages to skip.
     int messageSkip = 0;
 
-    final ServerMessage roomInfo = await stream.first;
-    if (roomInfo is RoomInfo) {
-      // Do something with that
-    } else {
-      throw 'Did not recieve RoomInfo as first packet from server.';
+    // Get the first message.
+    final server.ServerMessage roomInfo = await stream.first;
+
+    if (roomInfo is! server.RoomInfo) {
+      throw HandshakeException(HandshakeExceptionType.didNotRecieveRoomInfo);
     }
 
-    if (connectionInfo._getDataPackage) {
-      sink.add(GetDataPackage(null));
+    // If a handler is provided, ask for the data package
+    if (dataPackageHandler != null) {
+      var players = dataPackageHandler.selectGames(roomInfo);
+      send(client.GetDataPackage(players));
 
-      final ServerMessage dataPackage = await stream.skip(++messageSkip).first;
+      // Get the second message by skipping the first and grabbing the new first.
+      final server.ServerMessage dataPackage =
+          await stream.skip(++messageSkip).first;
 
-      if (dataPackage is DataPackage) {
-        // Do something with this
-      } else {
-        throw 'Did not recieve DataPackage as response to GetDataPackage.';
+      if (dataPackage is! server.DataPackage) {
+        throw HandshakeException(
+          HandshakeExceptionType.didNotRecieveDataPackage,
+        );
       }
+      await dataPackageHandler.handleDataPackage(dataPackage);
     }
 
-    sink.add(
-      Connect(
-        roomInfo.password ? connectionInfo._password : null,
-        connectionInfo._game,
-        connectionInfo._userName,
+    send(
+      client.Connect(
+        roomInfo.password ? connectionInfo.password : null,
+        connectionInfo.game,
+        connectionInfo.userName,
         _ArchipelagoGlobal.generateUUID(),
         _ArchipelagoGlobal.supportedVersion,
-        connectionInfo._itemFlags,
-        connectionInfo._tags,
-        connectionInfo._receiveSlotData,
+        connectionInfo.itemFlags,
+        connectionInfo.tags,
+        connectionInfo.receiveSlotData,
       ),
     );
 
-    final ServerMessage connectionStatus =
+    // Get either the second or third message, depending on _getDataPackage
+    final server.ServerMessage connectionStatus =
         await stream.skip(++messageSkip).first;
 
-    if (connectionStatus is Connected) {
+    if (connectionStatus is server.Connected) {
       // Connected
-    } else if (connectionStatus is ConnectionRefused) {
-      // Connection Failed
+    } else if (connectionStatus is server.ConnectionRefused) {
+      throw ArchipelagoConnectionRefused(
+        connectionStatus.errors?.map((e) => e.toString()).toList(),
+      );
     } else {
-      // other error
+      throw HandshakeException(
+        HandshakeExceptionType.didNotRecieveConnectionResponse,
+      );
     }
 
-    return (++messageSkip, roomInfo);
+    _ArchipelagoRoomInfo currentRoomInfo = _ArchipelagoRoomInfo(
+      connectionStatus.players,
+      connectionStatus.checkedLocations,
+    );
+
+    _ArchipelagoClientInfo currentClientInfo = _ArchipelagoClientInfo(
+      connectionInfo.itemFlags.otherWorlds,
+      connectionInfo.itemFlags.ownWorld,
+      connectionInfo.itemFlags.startingInventory,
+      connectionInfo.tags,
+    );
+
+    return ArchipelagoClient(currentClientInfo, currentRoomInfo, roomInfo);
   }
 
-  void send(ClientMessage message) {
+  void send(client.ClientMessage message) {
     _sink.add(message.toJson());
   }
+}
+
+final class HandshakeException implements Exception {
+  final HandshakeExceptionType type;
+  final String? description;
+  HandshakeException(this.type, [this.description]);
+}
+
+final class ArchipelagoConnectionRefused implements Exception {
+  final List<String>? errors;
+  ArchipelagoConnectionRefused(this.errors);
+}
+
+enum HandshakeExceptionType {
+  didNotRecieveRoomInfo,
+  didNotRecieveDataPackage,
+  didNotRecieveConnectionResponse,
+}
+
+final class _ArchipelagoRoomInfo {
+  List<NetworkPlayer> _players;
+  final Set<int> _checkedLocations;
+
+  _ArchipelagoRoomInfo(this._players, List<int> checkedLocations)
+    : _checkedLocations = checkedLocations.fold<Set<int>>(<int>{}, (set, x) {
+        set.add(x);
+        return set;
+      });
+
+  UnmodifiableSetView<int> get checkedLocations =>
+      UnmodifiableSetView(_checkedLocations);
+
+  void updateCheckedLocations(List<int> newLocations) {
+    newLocations.fold(_checkedLocations, (set, x) {
+      set.add(x);
+      return set;
+    });
+  }
+
+  UnmodifiableListView<NetworkPlayer> get players =>
+      UnmodifiableListView(_players);
+
+  void updatePlayerList(List<NetworkPlayer> players) {
+    _players = players;
+  }
+}
+
+final class _ArchipelagoClientInfo {
+  bool _receiveOtherWorld;
+  bool get receiveOtherWorld => _receiveOtherWorld;
+  bool _receiveOwnWorld;
+  bool get receiveOwnWorld => _receiveOwnWorld;
+  bool _receiveStartingInventory;
+  bool get receiveStartingInventory => _receiveStartingInventory;
+  List<String> tags;
+
+  void setItemHandlingFlags(bool other, bool own, bool starting) {
+    if ((own || starting) && !other) {
+      Error();
+    }
+    _receiveOtherWorld = other;
+    _receiveOwnWorld = own;
+    _receiveStartingInventory = starting;
+  }
+
+  client.ConnectUpdate get updateMessage => client.ConnectUpdate(
+    client.ItemsHandlingFlags(
+      receiveOtherWorld,
+      receiveOwnWorld,
+      receiveStartingInventory,
+    ),
+    tags,
+  );
+
+  _ArchipelagoClientInfo(
+    this._receiveOtherWorld,
+    this._receiveOwnWorld,
+    this._receiveStartingInventory,
+    this.tags,
+  );
+}
+
+abstract interface class DataPackageHandler {
+  List<String> selectGames(server.RoomInfo roomInfo);
+  Future<void> handleDataPackage(server.DataPackage dataPackage);
 }

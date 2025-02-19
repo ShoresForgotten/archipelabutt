@@ -31,13 +31,14 @@ final class Connect extends ClientMessage {
     this.uuid,
     this.version,
     this.itemsHandling,
-    this.tags,
+    List<String> tags,
     this.slotData,
-  );
+  ) : tags = List.unmodifiable(tags);
 
   factory Connect.fromJson(Map<String, dynamic> json) =>
       _$ConnectFromJson(json);
 
+  @override
   Map<String, dynamic> toJson() => _$ConnectToJson(this);
 }
 
@@ -46,7 +47,11 @@ final class ItemsHandlingFlags {
   final bool ownWorld;
   final bool startingInventory;
 
-  ItemsHandlingFlags(this.otherWorlds, this.ownWorld, this.startingInventory);
+  const ItemsHandlingFlags(
+    this.otherWorlds,
+    this.ownWorld,
+    this.startingInventory,
+  );
 
   factory ItemsHandlingFlags.fromJson(int raw) {
     bool otherWorlds = false;
@@ -91,11 +96,13 @@ final class ConnectUpdate extends ClientMessage {
   final ItemsHandlingFlags itemsHandling;
   final List<String> tags;
 
-  ConnectUpdate(this.itemsHandling, this.tags);
+  ConnectUpdate(this.itemsHandling, List<String> tags)
+    : tags = List.unmodifiable(tags);
 
   factory ConnectUpdate.fromJson(Map<String, dynamic> json) =>
       _$ConnectUpdateFromJson(json);
 
+  @override
   Map<String, dynamic> toJson() => _$ConnectUpdateToJson(this);
 }
 
@@ -108,6 +115,7 @@ final class Sync extends ClientMessage {
 
   factory Sync.fromJson(Map<String, dynamic> json) => _$SyncFromJson(json);
 
+  @override
   Map<String, dynamic> toJson() => _$SyncToJson(this);
 }
 
@@ -117,11 +125,13 @@ final class LocationChecks extends ClientMessage {
   final String cmd = "LocationChecks";
   final List<int> locations;
 
-  LocationChecks(this.locations);
+  LocationChecks(List<int> locations)
+    : locations = List.unmodifiable(locations);
 
   factory LocationChecks.fromJson(Map<String, dynamic> json) =>
       _$LocationChecksFromJson(json);
 
+  @override
   Map<String, dynamic> toJson() => _$LocationChecksToJson(this);
 }
 
@@ -132,7 +142,8 @@ final class LocationScouts extends ClientMessage {
   final List<int> locations;
   final int createAsHint;
 
-  LocationScouts(this.locations, this.createAsHint);
+  LocationScouts(List<int> locations, this.createAsHint)
+    : locations = List.unmodifiable(locations);
 
   bool get createHints => createAsHint != 0;
 
@@ -141,6 +152,7 @@ final class LocationScouts extends ClientMessage {
   factory LocationScouts.fromJson(Map<String, dynamic> json) =>
       _$LocationScoutsFromJson(json);
 
+  @override
   Map<String, dynamic> toJson() => _$LocationScoutsToJson(this);
 }
 
@@ -157,6 +169,7 @@ final class UpdateHint extends ClientMessage {
   factory UpdateHint.fromJson(Map<String, dynamic> json) =>
       _$UpdateHintFromJson(json);
 
+  @override
   Map<String, dynamic> toJson() => _$UpdateHintToJson(this);
 }
 
@@ -171,6 +184,7 @@ final class StatusUpdate extends ClientMessage {
   factory StatusUpdate.fromJson(Map<String, dynamic> json) =>
       _$StatusUpdateFromJson(json);
 
+  @override
   Map<String, dynamic> toJson() => _$StatusUpdateToJson(this);
 }
 
@@ -184,6 +198,7 @@ final class Say extends ClientMessage {
 
   factory Say.fromJson(Map<String, dynamic> json) => _$SayFromJson(json);
 
+  @override
   Map<String, dynamic> toJson() => _$SayToJson(this);
 }
 
@@ -193,11 +208,12 @@ final class GetDataPackage extends ClientMessage {
   final String cmd = "GetDataPackage";
   final List<String>? games;
 
-  GetDataPackage(this.games);
+  GetDataPackage(List<String> games) : games = List.unmodifiable(games);
 
   factory GetDataPackage.fromJson(Map<String, dynamic> json) =>
       _$GetDataPackageFromJson(json);
 
+  @override
   Map<String, dynamic> toJson() => _$GetDataPackageToJson(this);
 }
 
@@ -210,10 +226,29 @@ final class Bounce extends ClientMessage {
   final List<String>? tags;
   final Map<dynamic, dynamic> data;
 
-  Bounce({this.games, this.slots, this.tags, required this.data});
+  Bounce._({this.games, this.slots, this.tags, required this.data});
+
+  factory Bounce({
+    List<String>? games,
+    List<String>? slots,
+    List<String>? tags,
+    required Map<dynamic, dynamic> data,
+  }) {
+    if (games != null) games = List.unmodifiable(games);
+    if (slots != null) slots = List.unmodifiable(slots);
+    if (tags != null) tags = List.unmodifiable(tags);
+
+    return Bounce._(
+      games: games,
+      slots: slots,
+      tags: tags,
+      data: Map.unmodifiable(data),
+    );
+  }
 
   factory Bounce.fromJson(Map<String, dynamic> json) => _$BounceFromJson(json);
 
+  @override
   Map<String, dynamic> toJson() => _$BounceToJson(this);
 }
 
@@ -223,10 +258,11 @@ final class Get extends ClientMessage {
   final String cmd = "Get";
   final List<String> keys;
 
-  Get(this.keys);
+  Get(List<String> keys) : keys = List.unmodifiable(keys);
 
   factory Get.fromJson(Map<String, dynamic> json) => _$GetFromJson(json);
 
+  @override
   Map<String, dynamic> toJson() => _$GetToJson(this);
 }
 
@@ -244,10 +280,16 @@ final class Set extends ClientMessage {
   final bool wantReply;
   final List<DataStorageOperation> operations;
 
-  Set(this.key, this.defaultValue, this.wantReply, this.operations);
+  Set(
+    this.key,
+    this.defaultValue,
+    this.wantReply,
+    List<DataStorageOperation> operations,
+  ) : operations = List.unmodifiable(operations);
 
   //factory Set.fromJson(Map<String, dynamic> json) => _$SetFromJson(json);
 
+  @override
   Map<String, dynamic> toJson() => _$SetToJson(this);
 }
 
@@ -294,7 +336,8 @@ final class ArrayAddStorageOperation extends DataStorageOperation {
   final String operation = "add";
   final List<dynamic> value;
 
-  ArrayAddStorageOperation(this.value);
+  ArrayAddStorageOperation(List<dynamic> value)
+    : value = List.unmodifiable(value);
 
   factory ArrayAddStorageOperation.fromJson(Map<String, dynamic> json) =>
       _$ArrayAddStorageOperationFromJson(json);
@@ -348,7 +391,8 @@ final class UpdateStorageOperation extends DataStorageOperation {
   final String operation = 'update';
   final Map<dynamic, dynamic> value;
 
-  UpdateStorageOperation(this.value);
+  UpdateStorageOperation(Map<dynamic, dynamic> value)
+    : value = Map.unmodifiable(value);
 
   factory UpdateStorageOperation.fromJson(Map<String, dynamic> json) =>
       _$UpdateStorageOperationFromJson(json);
@@ -363,10 +407,11 @@ final class SetNotify extends ClientMessage {
   final String cmd = 'SetNotify';
   final List<String> keys;
 
-  SetNotify(this.keys);
+  SetNotify(List<String> keys) : keys = List.unmodifiable(keys);
 
   factory SetNotify.fromJson(Map<String, dynamic> json) =>
       _$SetNotifyFromJson(json);
 
+  @override
   Map<String, dynamic> toJson() => _$SetNotifyToJson(this);
 }

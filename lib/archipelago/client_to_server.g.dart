@@ -7,8 +7,8 @@ part of 'client_to_server.dart';
 // **************************************************************************
 
 Connect _$ConnectFromJson(Map<String, dynamic> json) => Connect(
-  json['password'] as String,
-  json['game'] as String,
+  json['password'] as String?,
+  json['game'] as String?,
   json['name'] as String,
   json['uuid'] as String,
   NetworkVersion.fromJson(json['version'] as Map<String, dynamic>),
@@ -113,7 +113,7 @@ Map<String, dynamic> _$SayToJson(Say instance) => <String, dynamic>{
 
 GetDataPackage _$GetDataPackageFromJson(Map<String, dynamic> json) =>
     GetDataPackage(
-      (json['games'] as List<dynamic>?)?.map((e) => e as String).toList(),
+      (json['games'] as List<dynamic>).map((e) => e as String).toList(),
     );
 
 Map<String, dynamic> _$GetDataPackageToJson(GetDataPackage instance) =>
