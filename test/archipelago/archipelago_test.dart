@@ -8,9 +8,9 @@ import 'package:mockito/mockito.dart';
 import 'package:stream_channel/stream_channel.dart';
 
 import 'package:archipelabutt/archipelago/archipelago.dart';
-import 'package:archipelabutt/archipelago/client_to_server.dart' as client;
-import 'package:archipelabutt/archipelago/server_to_client.dart' as server;
-import 'package:archipelabutt/archipelago/protocol_types.dart';
+import 'package:archipelabutt/archipelago/src/client_to_server.dart' as client;
+import 'package:archipelabutt/archipelago/src/server_to_client.dart' as server;
+import 'package:archipelabutt/archipelago/src/protocol_types.dart';
 import 'package:uuid/uuid.dart';
 
 @GenerateNiceMocks([
@@ -76,7 +76,7 @@ void main() {
 
       expect(
         verify(mockConnector.send(captureAny)).captured.single,
-        client.Connect(
+        client.ConnectMessage(
           null,
           'Spacewar',
           'Bob',

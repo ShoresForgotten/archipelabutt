@@ -1,3 +1,4 @@
+/// All the messages that can be sent from the client to the server.
 library;
 
 import 'package:json_annotation/json_annotation.dart';
@@ -17,7 +18,7 @@ sealed class ClientMessage {
   fieldRename: FieldRename.snake,
   constructor: '_jsonConstructor',
 )
-final class Connect extends ClientMessage {
+final class ConnectMessage extends ClientMessage {
   @override
   final String cmd = "Connect";
   final String? password;
@@ -25,11 +26,11 @@ final class Connect extends ClientMessage {
   final String name;
   final String uuid;
   final NetworkVersion version;
-  final ItemsHandlingFlags? itemsHandling;
+  final _ItemsHandlingFlags? itemsHandling;
   final List<String> tags;
   final bool slotData;
 
-  Connect(
+  ConnectMessage(
     this.password,
     this.game,
     this.name,
@@ -41,13 +42,13 @@ final class Connect extends ClientMessage {
     List<String> tags,
     this.slotData,
   ) : tags = List.unmodifiable(tags),
-      itemsHandling = ItemsHandlingFlags(
+      itemsHandling = _ItemsHandlingFlags(
         receiveOtherWorld,
         receiveOwnWorld,
         receiveStartingInventory,
       );
 
-  Connect._jsonConstructor(
+  ConnectMessage._jsonConstructor(
     this.password,
     this.game,
     this.name,
@@ -58,11 +59,11 @@ final class Connect extends ClientMessage {
     this.slotData,
   );
 
-  factory Connect.fromJson(Map<String, dynamic> json) =>
-      _$ConnectFromJson(json);
+  factory ConnectMessage.fromJson(Map<String, dynamic> json) =>
+      _$ConnectMessageFromJson(json);
 
   @override
-  Map<String, dynamic> toJson() => _$ConnectToJson(this);
+  Map<String, dynamic> toJson() => _$ConnectMessageToJson(this);
 
   @override
   int get hashCode => Object.hash(
@@ -78,7 +79,7 @@ final class Connect extends ClientMessage {
 
   @override
   bool operator ==(Object other) {
-    return other is Connect &&
+    return other is ConnectMessage &&
         other.password == password &&
         other.game == game &&
         other.name == name &&
@@ -90,18 +91,18 @@ final class Connect extends ClientMessage {
   }
 }
 
-final class ItemsHandlingFlags {
+final class _ItemsHandlingFlags {
   final bool otherWorlds;
   final bool ownWorld;
   final bool startingInventory;
 
-  const ItemsHandlingFlags(
+  const _ItemsHandlingFlags(
     this.otherWorlds,
     this.ownWorld,
     this.startingInventory,
   );
 
-  factory ItemsHandlingFlags.fromJson(int raw) {
+  factory _ItemsHandlingFlags.fromJson(int raw) {
     bool otherWorlds = false;
     bool ownWorld = false;
     bool startingInventory = false;
@@ -119,7 +120,7 @@ final class ItemsHandlingFlags {
     if (raw & 4 == 4) {
       startingInventory = true;
     }
-    return ItemsHandlingFlags(otherWorlds, ownWorld, startingInventory);
+    return _ItemsHandlingFlags(otherWorlds, ownWorld, startingInventory);
   }
 
   int toJson() {
@@ -141,7 +142,7 @@ final class ItemsHandlingFlags {
 
   @override
   bool operator ==(Object other) {
-    return other is ItemsHandlingFlags &&
+    return other is _ItemsHandlingFlags &&
         other.otherWorlds == otherWorlds &&
         other.ownWorld == ownWorld &&
         other.startingInventory == startingInventory;
@@ -149,147 +150,161 @@ final class ItemsHandlingFlags {
 }
 
 @JsonSerializable(explicitToJson: true, fieldRename: FieldRename.snake)
-final class ConnectUpdate extends ClientMessage {
+final class ConnectUpdateMessage extends ClientMessage {
   @override
   final String cmd = "ConnectUpdate";
-  final ItemsHandlingFlags itemsHandling;
+  final _ItemsHandlingFlags _itemsHandling;
+  bool get receiveOtherWorlds => _itemsHandling.otherWorlds;
+  bool get receiveOwnWorld => _itemsHandling.ownWorld;
+  bool get receiveStartingInventory => _itemsHandling.startingInventory;
   final List<String> tags;
 
-  ConnectUpdate(this.itemsHandling, List<String> tags)
-    : tags = List.unmodifiable(tags);
+  ConnectUpdateMessage(
+    bool receiveOtherWorlds,
+    bool receiveOwnWorld,
+    bool receiveStartingInventory,
+    List<String> tags,
+  ) : tags = List.unmodifiable(tags),
+      _itemsHandling = _ItemsHandlingFlags(
+        receiveOtherWorlds,
+        receiveOwnWorld,
+        receiveStartingInventory,
+      );
 
-  factory ConnectUpdate.fromJson(Map<String, dynamic> json) =>
-      _$ConnectUpdateFromJson(json);
+  factory ConnectUpdateMessage.fromJson(Map<String, dynamic> json) =>
+      _$ConnectUpdateMessageFromJson(json);
 
   @override
-  Map<String, dynamic> toJson() => _$ConnectUpdateToJson(this);
+  Map<String, dynamic> toJson() => _$ConnectUpdateMessageToJson(this);
 }
 
 @JsonSerializable()
-final class Sync extends ClientMessage {
+final class SyncMessage extends ClientMessage {
   @override
   final String cmd = "Sync";
 
-  Sync();
+  SyncMessage();
 
-  factory Sync.fromJson(Map<String, dynamic> json) => _$SyncFromJson(json);
+  factory SyncMessage.fromJson(Map<String, dynamic> json) =>
+      _$SyncMessageFromJson(json);
 
   @override
-  Map<String, dynamic> toJson() => _$SyncToJson(this);
+  Map<String, dynamic> toJson() => _$SyncMessageToJson(this);
 }
 
 @JsonSerializable()
-final class LocationChecks extends ClientMessage {
+final class LocationChecksMessage extends ClientMessage {
   @override
   final String cmd = "LocationChecks";
   final List<int> locations;
 
-  LocationChecks(List<int> locations)
+  LocationChecksMessage(List<int> locations)
     : locations = List.unmodifiable(locations);
 
-  factory LocationChecks.fromJson(Map<String, dynamic> json) =>
-      _$LocationChecksFromJson(json);
+  factory LocationChecksMessage.fromJson(Map<String, dynamic> json) =>
+      _$LocationChecksMessageFromJson(json);
 
   @override
-  Map<String, dynamic> toJson() => _$LocationChecksToJson(this);
+  Map<String, dynamic> toJson() => _$LocationChecksMessageToJson(this);
 }
 
 @JsonSerializable(fieldRename: FieldRename.snake)
-final class LocationScouts extends ClientMessage {
+final class LocationScoutsMessage extends ClientMessage {
   @override
   final String cmd = "LocationScouts";
   final List<int> locations;
   final int createAsHint;
 
-  LocationScouts(List<int> locations, this.createAsHint)
+  LocationScoutsMessage(List<int> locations, this.createAsHint)
     : locations = List.unmodifiable(locations);
 
   bool get createHints => createAsHint != 0;
 
   bool get newHintsOnly => createAsHint == 2;
 
-  factory LocationScouts.fromJson(Map<String, dynamic> json) =>
-      _$LocationScoutsFromJson(json);
+  factory LocationScoutsMessage.fromJson(Map<String, dynamic> json) =>
+      _$LocationScoutsMessageFromJson(json);
 
   @override
-  Map<String, dynamic> toJson() => _$LocationScoutsToJson(this);
+  Map<String, dynamic> toJson() => _$LocationScoutsMessageToJson(this);
 }
 
 @JsonSerializable(explicitToJson: true)
-final class UpdateHint extends ClientMessage {
+final class UpdateHintMessage extends ClientMessage {
   @override
   final String cmd = "UpdateHint";
   final int player;
   final int location;
   final HintStatus? status;
 
-  UpdateHint(this.player, this.location, [this.status]);
+  UpdateHintMessage(this.player, this.location, [this.status]);
 
-  factory UpdateHint.fromJson(Map<String, dynamic> json) =>
-      _$UpdateHintFromJson(json);
+  factory UpdateHintMessage.fromJson(Map<String, dynamic> json) =>
+      _$UpdateHintMessageFromJson(json);
 
   @override
-  Map<String, dynamic> toJson() => _$UpdateHintToJson(this);
+  Map<String, dynamic> toJson() => _$UpdateHintMessageToJson(this);
 }
 
 @JsonSerializable(explicitToJson: true)
-final class StatusUpdate extends ClientMessage {
+final class StatusUpdateMessage extends ClientMessage {
   @override
   final String cmd = "StatusUpdate";
   final ClientStatus status;
 
-  StatusUpdate(this.status);
+  StatusUpdateMessage(this.status);
 
-  factory StatusUpdate.fromJson(Map<String, dynamic> json) =>
-      _$StatusUpdateFromJson(json);
+  factory StatusUpdateMessage.fromJson(Map<String, dynamic> json) =>
+      _$StatusUpdateMessageFromJson(json);
 
   @override
-  Map<String, dynamic> toJson() => _$StatusUpdateToJson(this);
+  Map<String, dynamic> toJson() => _$StatusUpdateMessageToJson(this);
 }
 
 @JsonSerializable()
-final class Say extends ClientMessage {
+final class SayMessage extends ClientMessage {
   @override
   final String cmd = "Say";
   final String text;
 
-  Say(this.text);
+  SayMessage(this.text);
 
-  factory Say.fromJson(Map<String, dynamic> json) => _$SayFromJson(json);
+  factory SayMessage.fromJson(Map<String, dynamic> json) =>
+      _$SayMessageFromJson(json);
 
   @override
-  Map<String, dynamic> toJson() => _$SayToJson(this);
+  Map<String, dynamic> toJson() => _$SayMessageToJson(this);
 }
 
 @JsonSerializable()
-final class GetDataPackage extends ClientMessage {
+final class GetDataPackageMessage extends ClientMessage {
   @override
   final String cmd = "GetDataPackage";
   final List<String>? games;
 
-  GetDataPackage(List<String> games) : games = List.unmodifiable(games);
+  GetDataPackageMessage(this.games);
 
-  factory GetDataPackage.fromJson(Map<String, dynamic> json) =>
-      _$GetDataPackageFromJson(json);
+  factory GetDataPackageMessage.fromJson(Map<String, dynamic> json) =>
+      _$GetDataPackageMessageFromJson(json);
 
   @override
-  Map<String, dynamic> toJson() => _$GetDataPackageToJson(this);
+  Map<String, dynamic> toJson() => _$GetDataPackageMessageToJson(this);
 }
 
 @JsonSerializable()
-final class Bounce extends ClientMessage {
+final class BounceMessage extends ClientMessage {
   @override
   final String cmd = "Bounce";
   final List<String>? games;
-  final List<String>? slots;
+  final List<int>? slots;
   final List<String>? tags;
   final Map<dynamic, dynamic> data;
 
-  Bounce._({this.games, this.slots, this.tags, required this.data});
+  BounceMessage._({this.games, this.slots, this.tags, required this.data});
 
-  factory Bounce({
+  factory BounceMessage({
     List<String>? games,
-    List<String>? slots,
+    List<int>? slots,
     List<String>? tags,
     required Map<dynamic, dynamic> data,
   }) {
@@ -297,7 +312,7 @@ final class Bounce extends ClientMessage {
     if (slots != null) slots = List.unmodifiable(slots);
     if (tags != null) tags = List.unmodifiable(tags);
 
-    return Bounce._(
+    return BounceMessage._(
       games: games,
       slots: slots,
       tags: tags,
@@ -305,24 +320,26 @@ final class Bounce extends ClientMessage {
     );
   }
 
-  factory Bounce.fromJson(Map<String, dynamic> json) => _$BounceFromJson(json);
+  factory BounceMessage.fromJson(Map<String, dynamic> json) =>
+      _$BounceMessageFromJson(json);
 
   @override
-  Map<String, dynamic> toJson() => _$BounceToJson(this);
+  Map<String, dynamic> toJson() => _$BounceMessageToJson(this);
 }
 
 @JsonSerializable()
-final class Get extends ClientMessage {
+final class GetMessage extends ClientMessage {
   @override
   final String cmd = "Get";
   final List<String> keys;
 
-  Get(List<String> keys) : keys = List.unmodifiable(keys);
+  GetMessage(List<String> keys) : keys = List.unmodifiable(keys);
 
-  factory Get.fromJson(Map<String, dynamic> json) => _$GetFromJson(json);
+  factory GetMessage.fromJson(Map<String, dynamic> json) =>
+      _$GetMessageFromJson(json);
 
   @override
-  Map<String, dynamic> toJson() => _$GetToJson(this);
+  Map<String, dynamic> toJson() => _$GetMessageToJson(this);
 }
 
 @JsonSerializable(
@@ -330,7 +347,7 @@ final class Get extends ClientMessage {
   fieldRename: FieldRename.snake,
   createFactory: false,
 )
-final class Set extends ClientMessage {
+final class SetMessage extends ClientMessage {
   @override
   final String cmd = "Set";
   final String key;
@@ -339,17 +356,23 @@ final class Set extends ClientMessage {
   final bool wantReply;
   final List<DataStorageOperation> operations;
 
-  Set(
-    this.key,
-    this.defaultValue,
-    this.wantReply,
+  SetMessage._(this.key, this.defaultValue, this.wantReply, this.operations);
+
+  factory SetMessage(
+    key,
+    defaultValue,
+    wantReply,
     List<DataStorageOperation> operations,
-  ) : operations = List.unmodifiable(operations);
+  ) {
+    final List<DataStorageOperation> ops = List.unmodifiable(operations);
+    if (key.startsWith('_read_')) Error();
+    return SetMessage._(key, defaultValue, wantReply, ops);
+  }
 
   //factory Set.fromJson(Map<String, dynamic> json) => _$SetFromJson(json);
 
   @override
-  Map<String, dynamic> toJson() => _$SetToJson(this);
+  Map<String, dynamic> toJson() => _$SetMessageToJson(this);
 }
 
 sealed class DataStorageOperation {
@@ -461,16 +484,16 @@ final class UpdateStorageOperation extends DataStorageOperation {
 }
 
 @JsonSerializable()
-final class SetNotify extends ClientMessage {
+final class SetNotifyMessage extends ClientMessage {
   @override
   final String cmd = 'SetNotify';
   final List<String> keys;
 
-  SetNotify(List<String> keys) : keys = List.unmodifiable(keys);
+  SetNotifyMessage(List<String> keys) : keys = List.unmodifiable(keys);
 
-  factory SetNotify.fromJson(Map<String, dynamic> json) =>
-      _$SetNotifyFromJson(json);
+  factory SetNotifyMessage.fromJson(Map<String, dynamic> json) =>
+      _$SetNotifyMessageFromJson(json);
 
   @override
-  Map<String, dynamic> toJson() => _$SetNotifyToJson(this);
+  Map<String, dynamic> toJson() => _$SetNotifyMessageToJson(this);
 }

@@ -1,3 +1,4 @@
+/// All the message types that can be sent form the server to the client.
 library;
 
 import 'package:json_annotation/json_annotation.dart';
@@ -49,9 +50,7 @@ final class RoomInfo extends ServerMessage {
   final NetworkVersion generatorVersion;
   final List<String> tags;
   final bool password;
-  final Permission release;
-  final Permission collect;
-  final Permission remaining;
+  final PermissionsDict permissions;
   final int hintCost;
   final int locationCheckPoints;
   final List<String> games;
@@ -64,9 +63,7 @@ final class RoomInfo extends ServerMessage {
     this.generatorVersion,
     this.tags,
     this.password,
-    this.release,
-    this.collect,
-    this.remaining,
+    this.permissions,
     this.hintCost,
     this.locationCheckPoints,
     this.games,
@@ -173,7 +170,52 @@ final class RoomUpdate extends ServerMessage {
   final List<NetworkPlayer>? players;
   final List<int>? checkedLocations;
 
-  RoomUpdate({this.players, this.checkedLocations});
+  // RoomInfo fields.
+  // Not included: version, generator_version.
+  // generator_version would only change with a new world, and hence, a new room.
+  // version would only change with a server update, which shouldn't happen during a connection.
+  final List<String>? tags;
+  final bool? password;
+  final PermissionsDict? permissions;
+  final int? hintCost;
+  final int? locationCheckPoints;
+  final List<String>? games;
+  final Map<String, String>? datapackageChecksums;
+  final String? seedName;
+  @JsonKey(
+    fromJson: nullableFromPythonTimeJson,
+    toJson: nullableToPythonTimeJson,
+  )
+  final DateTime? time;
+
+  // Connected fields.
+  // Not included: players, checked_locations, missing_locations.
+  // players and checked_locations are special cases, handled as diffs above.
+  // missing_locations should never be sent in this message.
+  final int? team;
+  final int? slot;
+  final Map<String, dynamic>? slotData;
+  final Map<int, NetworkSlot>? slotInfo;
+  final int? hintPoints;
+
+  RoomUpdate({
+    this.tags,
+    this.password,
+    this.permissions,
+    this.hintCost,
+    this.locationCheckPoints,
+    this.games,
+    this.datapackageChecksums,
+    this.seedName,
+    this.time,
+    this.team,
+    this.slot,
+    this.slotData,
+    this.slotInfo,
+    this.hintPoints,
+    this.players,
+    this.checkedLocations,
+  });
 
   factory RoomUpdate.fromJson(Map<String, dynamic> json) =>
       _$RoomUpdateFromJson(json);

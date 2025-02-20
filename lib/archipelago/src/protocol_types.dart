@@ -1,4 +1,4 @@
-/// Common or elaborate data types used in the archipelago network protocol.
+/// Common or elaborate complex types used in the archipelago network protocol.
 library;
 
 import 'package:json_annotation/json_annotation.dart';
@@ -436,6 +436,20 @@ final class NetworkSlot {
   Map<String, dynamic> toJson() => _$NetworkSlotToJson(this);
 }
 
+@JsonSerializable(explicitToJson: true)
+final class PermissionsDict {
+  final Permission release;
+  final Permission collect;
+  final Permission remaining;
+
+  const PermissionsDict(this.release, this.collect, this.remaining);
+
+  factory PermissionsDict.fromJson(Map<String, dynamic> json) =>
+      _$PermissionsDictFromJson(json);
+
+  Map<String, dynamic> toJson() => _$PermissionsDictToJson(this);
+}
+
 /// Permissions for commands.
 @JsonEnum(valueField: 'value')
 enum Permission {
@@ -531,3 +545,9 @@ double toPythonTimeJson(DateTime time) =>
 
 DateTime fromPythonTimeJson(double time) =>
     DateTime.fromMillisecondsSinceEpoch((time * 1000).floor());
+
+double? nullableToPythonTimeJson(DateTime? time) =>
+    (time == null) ? null : toPythonTimeJson(time);
+
+DateTime? nullableFromPythonTimeJson(double? time) =>
+    (time == null) ? null : fromPythonTimeJson(time);
