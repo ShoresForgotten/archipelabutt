@@ -1,6 +1,7 @@
 library;
 
 import 'package:json_annotation/json_annotation.dart';
+import 'package:collection/collection.dart';
 
 import 'protocol_types.dart';
 
@@ -11,7 +12,11 @@ sealed class ClientMessage {
   Map<String, dynamic> toJson();
 }
 
-@JsonSerializable(explicitToJson: true, fieldRename: FieldRename.snake)
+@JsonSerializable(
+  explicitToJson: true,
+  fieldRename: FieldRename.snake,
+  constructor: '_jsonConstructor',
+)
 final class Connect extends ClientMessage {
   @override
   final String cmd = "Connect";
@@ -30,16 +35,59 @@ final class Connect extends ClientMessage {
     this.name,
     this.uuid,
     this.version,
-    this.itemsHandling,
+    bool receiveOtherWorld,
+    bool receiveOwnWorld,
+    bool receiveStartingInventory,
     List<String> tags,
     this.slotData,
-  ) : tags = List.unmodifiable(tags);
+  ) : tags = List.unmodifiable(tags),
+      itemsHandling = ItemsHandlingFlags(
+        receiveOtherWorld,
+        receiveOwnWorld,
+        receiveStartingInventory,
+      );
+
+  Connect._jsonConstructor(
+    this.password,
+    this.game,
+    this.name,
+    this.uuid,
+    this.version,
+    this.itemsHandling,
+    this.tags,
+    this.slotData,
+  );
 
   factory Connect.fromJson(Map<String, dynamic> json) =>
       _$ConnectFromJson(json);
 
   @override
   Map<String, dynamic> toJson() => _$ConnectToJson(this);
+
+  @override
+  int get hashCode => Object.hash(
+    password,
+    game,
+    name,
+    uuid,
+    version,
+    itemsHandling,
+    tags,
+    slotData,
+  );
+
+  @override
+  bool operator ==(Object other) {
+    return other is Connect &&
+        other.password == password &&
+        other.game == game &&
+        other.name == name &&
+        other.uuid == uuid &&
+        other.version == version &&
+        other.itemsHandling == itemsHandling &&
+        ListEquality().equals(other.tags, tags) &&
+        other.slotData == slotData;
+  }
 }
 
 final class ItemsHandlingFlags {
@@ -86,6 +134,17 @@ final class ItemsHandlingFlags {
       flags += 4;
     }
     return flags;
+  }
+
+  @override
+  int get hashCode => Object.hash(otherWorlds, ownWorld, startingInventory);
+
+  @override
+  bool operator ==(Object other) {
+    return other is ItemsHandlingFlags &&
+        other.otherWorlds == otherWorlds &&
+        other.ownWorld == ownWorld &&
+        other.startingInventory == startingInventory;
   }
 }
 

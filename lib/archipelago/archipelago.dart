@@ -1,9 +1,11 @@
 library;
 
+import 'dart:async';
 import 'dart:collection';
+import 'dart:convert';
 
 import 'package:uuid/uuid.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:stream_channel/stream_channel.dart';
 
 import 'client_to_server.dart' as client;
 import 'protocol_types.dart';
@@ -12,7 +14,7 @@ import 'server_to_client.dart' as server;
 /// Controller class for an Archipelago connection.
 /// Encapsulates all the state required for an Archipelago connection.
 final class ArchipelagoClient {
-  final _ArchipelagoConnection _connection;
+  final ArchipelagoConnector _connection;
   final _ArchipelagoClientInfo _currentClientInfo;
   final _ArchipelagoRoomInfo _currentRoomInfo;
   final int team;
@@ -53,16 +55,119 @@ final class ArchipelagoClient {
   );
 
   static Future<ArchipelagoClient> connect(
+    StreamChannel channel,
     ArchipelagoClientSettings clientSettings,
-    ArchipelagoConnectionSettings connectionSettings, [
+    String uuid,
+    String userName, [
+    String password = '',
     DataPackageHandler? dataPackageHandler,
   ]) async {
-    final connection = await _ArchipelagoConnection.connect(connectionSettings);
-    final stream = connection.stream;
-    server.RoomInfo? roomInfo;
-    server.DataPackage? dataPackage;
-    server.ServerMessage? connected;
-    _HandshakeStep handShakeStep = _HandshakeStep.roomInfo;
+    ArchipelagoConnector connection = ArchipelagoConnector(channel);
+    return ArchipelagoClient._handshake(
+      clientSettings,
+      connection,
+      userName,
+      password,
+      uuid,
+      dataPackageHandler,
+    );
+  }
+
+  static Future<ArchipelagoClient> connectUsingConnector(
+    ArchipelagoConnector connector,
+    ArchipelagoClientSettings clientSettings,
+    String userName,
+    String uuid, [
+    String password = '',
+    DataPackageHandler? dataPackageHandler,
+  ]) async {
+    return ArchipelagoClient._handshake(
+      clientSettings,
+      connector,
+      userName,
+      password,
+      uuid,
+      dataPackageHandler,
+    );
+  }
+
+  static Future<ArchipelagoClient> _handshake(
+    ArchipelagoClientSettings clientSettings,
+    ArchipelagoConnector connector,
+    String userName,
+    String password,
+    String uuid, [
+    DataPackageHandler? dataPackageHandler,
+  ]) async {
+    final stream = connector.stream;
+
+    final queue = _MessageQueue();
+    final queueStreamController = stream.listen(
+      (event) => queue.addMessage(event),
+    );
+
+    final server.ServerMessage roomInfo = await queue.getMessage();
+    if (roomInfo is! server.RoomInfo) {
+      throw HandshakeException(HandshakeExceptionType.didNotRecieveRoomInfo);
+    }
+
+    if (dataPackageHandler != null) {
+      final games = dataPackageHandler.selectGames(roomInfo);
+      connector.send(client.GetDataPackage(games));
+      final server.ServerMessage dataPackage = await queue.getMessage();
+      if (dataPackage is! server.DataPackage) {
+        throw HandshakeException(
+          HandshakeExceptionType.didNotRecieveDataPackage,
+        );
+      }
+      dataPackageHandler.handleDataPackage(dataPackage);
+    }
+
+    connector.send(
+      client.Connect(
+        roomInfo.password ? password : null,
+        clientSettings.game,
+        userName,
+        uuid,
+        _ArchipelagoGlobal.supportedVersion,
+        clientSettings.itemFlags.otherWorlds,
+        clientSettings.itemFlags.ownWorld,
+        clientSettings.itemFlags.startingInventory,
+        clientSettings.tags,
+        clientSettings.receiveSlotData,
+      ),
+    );
+
+    final server.ServerMessage connected = await queue.getMessage();
+    // Stop sending messages to the queue, we've either succeeded or failed by now.
+    queueStreamController.cancel();
+
+    if (connected is server.ConnectionRefused) {
+      throw ArchipelagoConnectionRefused(connected.errors);
+    } else if (connected is! server.Connected) {
+      throw HandshakeException(
+        HandshakeExceptionType.didNotRecieveConnectionResponse,
+      );
+    }
+
+    return ArchipelagoClient._(
+      connector,
+      _ArchipelagoClientInfo(
+        clientSettings.itemFlags.otherWorlds,
+        clientSettings.itemFlags.ownWorld,
+        clientSettings.itemFlags.startingInventory,
+        clientSettings.tags,
+      ),
+      _ArchipelagoRoomInfo(connected.players, connected.checkedLocations),
+      roomInfo,
+      connected.team,
+      connected.slot,
+      connected.missingLocations,
+      connected.checkedLocations,
+      connected.slotData,
+      connected.slotInfo,
+      connected.hintPoints,
+    );
   }
 
   /// Apply a RoomUpdate message.
@@ -77,9 +182,37 @@ final class ArchipelagoClient {
       _currentRoomInfo.updateCheckedLocations(checkedLocations);
     }
   }
+
+  void sendMessage(client.ClientMessage message) {
+    _connection.send(message);
+  }
 }
 
-enum _HandshakeStep { roomInfo, dataPackage, connection }
+/// A queue to hold messages and return them asynchronously.
+/// ONLY USE DURING THE HANDSHAKE.
+final class _MessageQueue {
+  final Queue<server.ServerMessage> _queue = Queue();
+  Completer<server.ServerMessage>? _waiting;
+
+  void addMessage(server.ServerMessage message) {
+    if (_waiting == null) {
+      _queue.add(message);
+    } else {
+      _waiting!.complete(message);
+      _waiting = null;
+    }
+  }
+
+  Future<server.ServerMessage> getMessage() async {
+    if (_queue.isEmpty) {
+      // This doesn't actually make anything safer
+      _waiting ??= Completer();
+      return _waiting!.future;
+    } else {
+      return Future.value(_queue.removeFirst());
+    }
+  }
+}
 
 /// Globally available utilities for Archipelago connections.
 abstract class _ArchipelagoGlobal {
@@ -98,29 +231,7 @@ abstract class _ArchipelagoGlobal {
   }
 }
 
-/// User-facing connection settings.
-/// While these settings required aren't enough to do anything alone, they are the ones more likely to change regularly.
-class ArchipelagoConnectionSettings {
-  final Uri uri;
-  final String userName;
-  final String password;
-
-  ArchipelagoConnectionSettings._(this.uri, this.userName, this.password);
-
-  factory ArchipelagoConnectionSettings({
-    required String address,
-    required int port,
-    required String userName,
-    String password = '',
-  }) {
-    final uri = Uri(host: address, port: port, scheme: 'ws');
-
-    return ArchipelagoConnectionSettings._(uri, userName, password);
-  }
-}
-
 /// Application-facing connection settings.
-/// [ArchipelagoConnectionSettings] are still required to do anything, but these are settings typically set by the application and not changed by the user.
 class ArchipelagoClientSettings {
   final String? game;
   final List<String> tags;
@@ -163,132 +274,28 @@ class ArchipelagoClientSettings {
       receiveSlotData,
     );
   }
-
-  const ArchipelagoClientSettings.constConstructor(
-    this.game,
-    this.tags,
-    this.itemFlags,
-    this.receiveSlotData,
-  );
 }
 
-class _ArchipelagoConnection {
-  final WebSocketChannel _channel;
-  final WebSocketSink _sink;
+class ArchipelagoConnector {
+  final StreamChannel _channel;
+  final StreamSink _sink;
   final Stream<server.ServerMessage> stream;
-  final String clientUUID;
-  final ArchipelagoConnectionSettings connectionInfo;
 
-  _ArchipelagoConnection._(
-    this._channel,
-    this._sink,
-    this.stream,
-    this.clientUUID,
-    this.connectionInfo,
-  );
+  ArchipelagoConnector._(this._channel, this._sink, this.stream);
 
-  static Future<_ArchipelagoConnection> connect(
-    ArchipelagoConnectionSettings connectionInfo,
-  ) async {
-    // TODO: Rewrite this
-    final channel = WebSocketChannel.connect(connectionInfo.uri);
-    // Get the stream from the socket, interpret the packets, and make it a broadcast.
+  factory ArchipelagoConnector(StreamChannel channel) {
     final stream =
         channel.stream
-            .map((event) => server.ServerMessage.fromJson(event))
+            .map((event) => jsonDecode(event) as List<dynamic>)
+            .expand((x) => x)
+            .map((event) => jsonDecode(event) as server.ServerMessage)
             .asBroadcastStream();
-    // Wait until it's actually ready
-    await channel.ready;
-
-    final WebSocketSink sink = channel.sink;
-
-    final uuid = _ArchipelagoGlobal.generateUUID();
-
-    return _ArchipelagoConnection._(
-      channel,
-      sink,
-      stream,
-      uuid,
-      connectionInfo,
-    );
-  }
-
-  Future<ArchipelagoClient> handshake([
-    DataPackageHandler? dataPackageHandler,
-  ]) async {
-    // We need to keep track of how many of the first messages to skip.
-    int messageSkip = 0;
-
-    // Get the first message.
-    final server.ServerMessage roomInfo = await stream.first;
-
-    if (roomInfo is! server.RoomInfo) {
-      throw HandshakeException(HandshakeExceptionType.didNotRecieveRoomInfo);
-    }
-
-    // If a handler is provided, ask for the data package
-    if (dataPackageHandler != null) {
-      var players = dataPackageHandler.selectGames(roomInfo);
-      send(client.GetDataPackage(players));
-
-      // Get the second message by skipping the first and grabbing the new first.
-      final server.ServerMessage dataPackage =
-          await stream.skip(++messageSkip).first;
-
-      if (dataPackage is! server.DataPackage) {
-        throw HandshakeException(
-          HandshakeExceptionType.didNotRecieveDataPackage,
-        );
-      }
-      await dataPackageHandler.handleDataPackage(dataPackage);
-    }
-
-    send(
-      client.Connect(
-        roomInfo.password ? connectionInfo.password : null,
-        connectionInfo.game,
-        connectionInfo.userName,
-        _ArchipelagoGlobal.generateUUID(),
-        _ArchipelagoGlobal.supportedVersion,
-        connectionInfo.itemFlags,
-        connectionInfo.tags,
-        connectionInfo.receiveSlotData,
-      ),
-    );
-
-    // Get either the second or third message, depending on _getDataPackage
-    final server.ServerMessage connectionStatus =
-        await stream.skip(++messageSkip).first;
-
-    if (connectionStatus is server.Connected) {
-      // Connected
-    } else if (connectionStatus is server.ConnectionRefused) {
-      throw ArchipelagoConnectionRefused(
-        connectionStatus.errors?.map((e) => e.toString()).toList(),
-      );
-    } else {
-      throw HandshakeException(
-        HandshakeExceptionType.didNotRecieveConnectionResponse,
-      );
-    }
-
-    _ArchipelagoRoomInfo currentRoomInfo = _ArchipelagoRoomInfo(
-      connectionStatus.players,
-      connectionStatus.checkedLocations,
-    );
-
-    _ArchipelagoClientInfo currentClientInfo = _ArchipelagoClientInfo(
-      connectionInfo.itemFlags.otherWorlds,
-      connectionInfo.itemFlags.ownWorld,
-      connectionInfo.itemFlags.startingInventory,
-      connectionInfo.tags,
-    );
-
-    return ArchipelagoClient(currentClientInfo, currentRoomInfo, roomInfo);
+    final StreamSink sink = channel.sink;
+    return ArchipelagoConnector._(channel, sink, stream);
   }
 
   void send(client.ClientMessage message) {
-    _sink.add(message.toJson());
+    _sink.add(jsonEncode([message]));
   }
 }
 
@@ -299,7 +306,7 @@ final class HandshakeException implements Exception {
 }
 
 final class ArchipelagoConnectionRefused implements Exception {
-  final List<String>? errors;
+  final List<server.ConnectionRefusedReason>? errors;
   ArchipelagoConnectionRefused(this.errors);
 }
 

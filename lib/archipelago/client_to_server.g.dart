@@ -6,18 +6,21 @@ part of 'client_to_server.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-Connect _$ConnectFromJson(Map<String, dynamic> json) => Connect(
-  json['password'] as String?,
-  json['game'] as String?,
-  json['name'] as String,
-  json['uuid'] as String,
-  NetworkVersion.fromJson(json['version'] as Map<String, dynamic>),
-  json['items_handling'] == null
-      ? null
-      : ItemsHandlingFlags.fromJson((json['items_handling'] as num).toInt()),
-  (json['tags'] as List<dynamic>).map((e) => e as String).toList(),
-  json['slot_data'] as bool,
-);
+Connect _$ConnectFromJson(Map<String, dynamic> json) =>
+    Connect._jsonConstructor(
+      json['password'] as String?,
+      json['game'] as String?,
+      json['name'] as String,
+      json['uuid'] as String,
+      NetworkVersion.fromJson(json['version'] as Map<String, dynamic>),
+      json['items_handling'] == null
+          ? null
+          : ItemsHandlingFlags.fromJson(
+            (json['items_handling'] as num).toInt(),
+          ),
+      (json['tags'] as List<dynamic>).map((e) => e as String).toList(),
+      json['slot_data'] as bool,
+    );
 
 Map<String, dynamic> _$ConnectToJson(Connect instance) => <String, dynamic>{
   'password': instance.password,

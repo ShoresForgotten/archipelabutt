@@ -8,7 +8,7 @@ part 'protocol_types.g.dart';
 /// Information about a player in a session.
 @JsonSerializable()
 final class NetworkPlayer {
-  @JsonKey(name: 'class', includeToJson: true)
+  @JsonKey(name: 'class', includeToJson: true, required: false)
   final String classKey = 'NetworkPlayer';
 
   /// Team to which the player belongs. Starts at 0.
@@ -28,12 +28,24 @@ final class NetworkPlayer {
       _$NetworkPlayerFromJson(json);
 
   Map<String, dynamic> toJson() => _$NetworkPlayerToJson(this);
+
+  @override
+  int get hashCode => Object.hash(team, slot, alias, name);
+
+  @override
+  bool operator ==(Object other) {
+    return other is NetworkPlayer &&
+        other.team == team &&
+        other.slot == slot &&
+        other.alias == alias &&
+        other.name == name;
+  }
 }
 
 /// Information about an item.
 @JsonSerializable(explicitToJson: true)
 final class NetworkItem {
-  @JsonKey(name: 'class', includeToJson: true)
+  @JsonKey(name: 'class', includeToJson: true, required: false)
   final String classKey = 'NetworkItem';
 
   /// Item ID of the item. Within the of -2^53 + 1 to 2^53 -1, inclusive.
@@ -352,7 +364,7 @@ enum ClientStatus {
 /// A version of software. Used to communicate Archipelago versions.
 @JsonSerializable()
 final class NetworkVersion {
-  @JsonKey(name: 'class', includeToJson: true)
+  @JsonKey(name: 'class', includeToJson: true, required: false)
   final String classKey = 'Version';
   final int major;
   final int minor;
@@ -364,6 +376,17 @@ final class NetworkVersion {
       _$NetworkVersionFromJson(json);
 
   Map<String, dynamic> toJson() => _$NetworkVersionToJson(this);
+
+  @override
+  int get hashCode => Object.hash(major, minor, build);
+
+  @override
+  bool operator ==(Object other) {
+    return other is NetworkVersion &&
+        other.major == major &&
+        other.minor == minor &&
+        other.build == build;
+  }
 }
 
 /// Flags representing the nature of a slot
@@ -398,7 +421,7 @@ final class SlotType {
 /// Static information about a slot.
 @JsonSerializable(explicitToJson: true)
 final class NetworkSlot {
-  @JsonKey(name: 'class', includeToJson: true)
+  @JsonKey(name: 'class', includeToJson: true, required: false)
   final String classKey = 'NetworkSlot';
   final String name;
   final String game;
@@ -430,7 +453,7 @@ enum Permission {
 /// Hint information.
 @JsonSerializable(explicitToJson: true)
 final class Hint {
-  @JsonKey(name: 'class', includeToJson: true)
+  @JsonKey(name: 'class', includeToJson: true, required: false)
   final String classKey = 'Hint';
   final int receivingPlayer;
   final int findingPlayer;
@@ -487,7 +510,8 @@ final class GameData {
 @JsonSerializable(explicitToJson: true)
 final class DeathLink {
   /// Time of death.
-  final PythonTime time;
+  @JsonKey(toJson: toPythonTimeJson, fromJson: fromPythonTimeJson)
+  final DateTime time;
 
   /// Optional cause of death.
   final String? cause;
@@ -502,11 +526,8 @@ final class DeathLink {
       _$DeathLinkFromJson(json);
 }
 
-/// Wrapper class for DateTime to handle (de)serialization to floating point.
-final class PythonTime {
-  final DateTime time;
-  PythonTime(this.time);
-  double toJson() => (time.millisecondsSinceEpoch / 1000).toDouble();
-  factory PythonTime.fromJson(double value) =>
-      PythonTime(DateTime.fromMillisecondsSinceEpoch((value * 1000).floor()));
-}
+double toPythonTimeJson(DateTime time) =>
+    (time.millisecondsSinceEpoch / 1000).toDouble();
+
+DateTime fromPythonTimeJson(double time) =>
+    DateTime.fromMillisecondsSinceEpoch((time * 1000).floor());

@@ -19,7 +19,7 @@ RoomInfo _$RoomInfoFromJson(Map<String, dynamic> json) => RoomInfo(
   (json['games'] as List<dynamic>).map((e) => e as String).toList(),
   Map<String, String>.from(json['datapackage_checksums'] as Map),
   json['seed_name'] as String,
-  PythonTime.fromJson((json['time'] as num).toDouble()),
+  fromPythonTimeJson((json['time'] as num).toDouble()),
 );
 
 Map<String, dynamic> _$RoomInfoToJson(RoomInfo instance) => <String, dynamic>{
@@ -35,7 +35,7 @@ Map<String, dynamic> _$RoomInfoToJson(RoomInfo instance) => <String, dynamic>{
   'games': instance.games,
   'datapackage_checksums': instance.datapackageChecksums,
   'seed_name': instance.seedName,
-  'time': instance.time.toJson(),
+  'time': toPythonTimeJson(instance.time),
 };
 
 const _$PermissionEnumMap = {

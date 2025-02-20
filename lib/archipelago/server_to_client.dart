@@ -57,7 +57,8 @@ final class RoomInfo extends ServerMessage {
   final List<String> games;
   final Map<String, String> datapackageChecksums;
   final String seedName;
-  final PythonTime time;
+  @JsonKey(fromJson: fromPythonTimeJson, toJson: toPythonTimeJson)
+  final DateTime time;
   RoomInfo(
     this.version,
     this.generatorVersion,

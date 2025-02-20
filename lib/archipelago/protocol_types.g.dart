@@ -261,13 +261,13 @@ Map<String, dynamic> _$GameDataToJson(GameData instance) => <String, dynamic>{
 };
 
 DeathLink _$DeathLinkFromJson(Map<String, dynamic> json) => DeathLink(
-  PythonTime.fromJson((json['time'] as num).toDouble()),
+  fromPythonTimeJson((json['time'] as num).toDouble()),
   json['source'] as String,
   json['cause'] as String?,
 );
 
 Map<String, dynamic> _$DeathLinkToJson(DeathLink instance) => <String, dynamic>{
-  'time': instance.time.toJson(),
+  'time': toPythonTimeJson(instance.time),
   'cause': instance.cause,
   'source': instance.source,
 };
