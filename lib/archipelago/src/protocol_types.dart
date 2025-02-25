@@ -7,7 +7,7 @@ part 'protocol_types.g.dart';
 
 /// Information about a player in a session.
 @JsonSerializable()
-final class NetworkPlayer {
+class NetworkPlayer {
   @JsonKey(name: 'class', includeToJson: true, required: false)
   final String classKey = 'NetworkPlayer';
 
@@ -44,7 +44,7 @@ final class NetworkPlayer {
 
 /// Information about an item.
 @JsonSerializable(explicitToJson: true)
-final class NetworkItem {
+class NetworkItem {
   @JsonKey(name: 'class', includeToJson: true, required: false)
   final String classKey = 'NetworkItem';
 
@@ -70,7 +70,7 @@ final class NetworkItem {
 }
 
 /// Flags for information about an item.
-final class NetworkItemFlags {
+class NetworkItemFlags {
   /// Does this item unlock a logical advancement?
   final bool logicalAdvancement;
 
@@ -132,42 +132,46 @@ sealed class JSONMessagePart {
   Map<String, dynamic> toJson();
 
   factory JSONMessagePart.fromJson(Map<String, dynamic> json) {
-    String type = json['type'];
-    switch (type) {
-      case 'text':
-        return TextMessagePart.fromJson(json);
-      case 'player_id':
-        return PlayerIDMessagePart.fromJson(json);
-      case 'player_name':
-        return PlayerNameMessagePart.fromJson(json);
-      case 'item_id':
-        return ItemIDMessagePart.fromJson(json);
-      case 'item_name':
-        return ItemNameMessagePart.fromJson(json);
-      case 'location_id':
-        return LocationIDMessagePart.fromJson(json);
-      case 'location_name':
-        return LocationNameMessagePart.fromJson(json);
-      case 'entrance_name':
-        return EntranceNameMessagePart.fromJson(json);
-      case 'hint_status':
-        return HintStatusMessagePart.fromJson(json);
-      case 'color':
-        return ColorMessagePart.fromJson(json);
-      default:
-        throw "Invalid JSON message part type";
+    if (json.containsKey('type')) {
+      String type = json['type'];
+      switch (type) {
+        case 'text':
+          return TextJSONMessagePart.fromJson(json);
+        case 'player_id':
+          return PlayerIDJSONMessagePart.fromJson(json);
+        case 'player_name':
+          return PlayerNameJSONMessagePart.fromJson(json);
+        case 'item_id':
+          return ItemIDJSONMessagePart.fromJson(json);
+        case 'item_name':
+          return ItemNameJSONMessagePart.fromJson(json);
+        case 'location_id':
+          return LocationIDJSONMessagePart.fromJson(json);
+        case 'location_name':
+          return LocationNameJSONMessagePart.fromJson(json);
+        case 'entrance_name':
+          return EntranceNameJSONMessagePart.fromJson(json);
+        case 'hint_status':
+          return HintStatusJSONMessagePart.fromJson(json);
+        case 'color':
+          return ColorJSONMessagePart.fromJson(json);
+        default:
+          throw "Invalid JSON message part type";
+      }
+    } else {
+      return TextJSONMessagePart.fromJson(json);
     }
   }
 }
 
 /// Default case. Just contains text.
 @JsonSerializable()
-final class TextMessagePart extends JSONMessagePart {
+class TextJSONMessagePart extends JSONMessagePart {
   final String type = 'text';
 
-  const TextMessagePart(super.text);
+  const TextJSONMessagePart(super.text);
 
-  factory TextMessagePart.fromJson(Map<String, dynamic> json) =>
+  factory TextJSONMessagePart.fromJson(Map<String, dynamic> json) =>
       _$TextMessagePartFromJson(json);
 
   @override
@@ -176,12 +180,12 @@ final class TextMessagePart extends JSONMessagePart {
 
 /// Text is the player id of somebody on the client's team. Should be resolved to a name.
 @JsonSerializable()
-final class PlayerIDMessagePart extends JSONMessagePart {
+class PlayerIDJSONMessagePart extends JSONMessagePart {
   final String type = 'player_id';
 
-  const PlayerIDMessagePart(super.text);
+  const PlayerIDJSONMessagePart(super.text);
 
-  factory PlayerIDMessagePart.fromJson(Map<String, dynamic> json) =>
+  factory PlayerIDJSONMessagePart.fromJson(Map<String, dynamic> json) =>
       _$PlayerIDMessagePartFromJson(json);
 
   @override
@@ -190,12 +194,12 @@ final class PlayerIDMessagePart extends JSONMessagePart {
 
 /// Text is the name of a player in the session. Can't be resovled to an id.
 @JsonSerializable()
-final class PlayerNameMessagePart extends JSONMessagePart {
+class PlayerNameJSONMessagePart extends JSONMessagePart {
   final String type = 'player_name';
 
-  const PlayerNameMessagePart(super.text);
+  const PlayerNameJSONMessagePart(super.text);
 
-  factory PlayerNameMessagePart.fromJson(Map<String, dynamic> json) =>
+  factory PlayerNameJSONMessagePart.fromJson(Map<String, dynamic> json) =>
       _$PlayerNameMessagePartFromJson(json);
 
   @override
@@ -204,14 +208,14 @@ final class PlayerNameMessagePart extends JSONMessagePart {
 
 /// Text contains an item id, should be resolved to a name.
 @JsonSerializable(explicitToJson: true)
-final class ItemIDMessagePart extends JSONMessagePart {
+class ItemIDJSONMessagePart extends JSONMessagePart {
   final String type = 'item_id';
   final NetworkItemFlags flags;
   final int player;
 
-  const ItemIDMessagePart(super.text, this.flags, this.player);
+  const ItemIDJSONMessagePart(super.text, this.flags, this.player);
 
-  factory ItemIDMessagePart.fromJson(Map<String, dynamic> json) =>
+  factory ItemIDJSONMessagePart.fromJson(Map<String, dynamic> json) =>
       _$ItemIDMessagePartFromJson(json);
 
   @override
@@ -220,14 +224,14 @@ final class ItemIDMessagePart extends JSONMessagePart {
 
 /// Text contains an item name. Not currently used.
 @JsonSerializable(explicitToJson: true)
-final class ItemNameMessagePart extends JSONMessagePart {
+class ItemNameJSONMessagePart extends JSONMessagePart {
   final String type = 'item_name';
   final NetworkItemFlags flags;
   final int player;
 
-  const ItemNameMessagePart(super.text, this.flags, this.player);
+  const ItemNameJSONMessagePart(super.text, this.flags, this.player);
 
-  factory ItemNameMessagePart.fromJson(Map<String, dynamic> json) =>
+  factory ItemNameJSONMessagePart.fromJson(Map<String, dynamic> json) =>
       _$ItemNameMessagePartFromJson(json);
 
   @override
@@ -236,13 +240,13 @@ final class ItemNameMessagePart extends JSONMessagePart {
 
 /// Text contains a location id, should be resolved to a name.
 @JsonSerializable()
-final class LocationIDMessagePart extends JSONMessagePart {
+class LocationIDJSONMessagePart extends JSONMessagePart {
   final String type = 'location_id';
   final int player;
 
-  const LocationIDMessagePart(super.text, this.player);
+  const LocationIDJSONMessagePart(super.text, this.player);
 
-  factory LocationIDMessagePart.fromJson(Map<String, dynamic> json) =>
+  factory LocationIDJSONMessagePart.fromJson(Map<String, dynamic> json) =>
       _$LocationIDMessagePartFromJson(json);
 
   @override
@@ -251,13 +255,13 @@ final class LocationIDMessagePart extends JSONMessagePart {
 
 /// Text contains a location name. Not currently used.
 @JsonSerializable()
-final class LocationNameMessagePart extends JSONMessagePart {
+class LocationNameJSONMessagePart extends JSONMessagePart {
   final String type = 'location_name';
   final int player;
 
-  const LocationNameMessagePart(super.text, this.player);
+  const LocationNameJSONMessagePart(super.text, this.player);
 
-  factory LocationNameMessagePart.fromJson(Map<String, dynamic> json) =>
+  factory LocationNameJSONMessagePart.fromJson(Map<String, dynamic> json) =>
       _$LocationNameMessagePartFromJson(json);
 
   @override
@@ -266,12 +270,12 @@ final class LocationNameMessagePart extends JSONMessagePart {
 
 /// Text contains an entrance name. No id mapping.
 @JsonSerializable()
-final class EntranceNameMessagePart extends JSONMessagePart {
+class EntranceNameJSONMessagePart extends JSONMessagePart {
   final String type = 'entrance_name';
 
-  const EntranceNameMessagePart(super.text);
+  const EntranceNameJSONMessagePart(super.text);
 
-  factory EntranceNameMessagePart.fromJson(Map<String, dynamic> json) =>
+  factory EntranceNameJSONMessagePart.fromJson(Map<String, dynamic> json) =>
       _$EntranceNameMessagePartFromJson(json);
 
   @override
@@ -280,31 +284,31 @@ final class EntranceNameMessagePart extends JSONMessagePart {
 
 /// The [HintStatus] of a hint.
 @JsonSerializable()
-final class HintStatusMessagePart extends JSONMessagePart {
+class HintStatusJSONMessagePart extends JSONMessagePart {
   final String type = 'hint_status';
   final HintStatus status;
 
-  const HintStatusMessagePart(super.text, this.status);
+  const HintStatusJSONMessagePart(super.text, this.status);
 
   @override
   Map<String, dynamic> toJson() => _$HintStatusMessagePartToJson(this);
 
-  factory HintStatusMessagePart.fromJson(Map<String, dynamic> json) =>
+  factory HintStatusJSONMessagePart.fromJson(Map<String, dynamic> json) =>
       _$HintStatusMessagePartFromJson(json);
 }
 
 /// Regular text that should be colored.
 @JsonSerializable()
-final class ColorMessagePart extends JSONMessagePart {
+class ColorJSONMessagePart extends JSONMessagePart {
   final String type = 'color';
   final ConsoleColor color;
 
-  const ColorMessagePart(super.text, this.color);
+  const ColorJSONMessagePart(super.text, this.color);
 
   @override
   Map<String, dynamic> toJson() => _$ColorMessagePartToJson(this);
 
-  factory ColorMessagePart.fromJson(Map<String, dynamic> json) =>
+  factory ColorJSONMessagePart.fromJson(Map<String, dynamic> json) =>
       _$ColorMessagePartFromJson(json);
 }
 
@@ -363,7 +367,7 @@ enum ClientStatus {
 
 /// A version of software. Used to communicate Archipelago versions.
 @JsonSerializable()
-final class NetworkVersion {
+class NetworkVersion {
   @JsonKey(name: 'class', includeToJson: true, required: false)
   final String classKey = 'Version';
   final int major;
@@ -390,7 +394,7 @@ final class NetworkVersion {
 }
 
 /// Flags representing the nature of a slot
-final class SlotType {
+class SlotType {
   /// True if slot is a player, false if it's a spectator
   final bool player;
   final bool group;
@@ -420,7 +424,7 @@ final class SlotType {
 
 /// Static information about a slot.
 @JsonSerializable(explicitToJson: true)
-final class NetworkSlot {
+class NetworkSlot {
   @JsonKey(name: 'class', includeToJson: true, required: false)
   final String classKey = 'NetworkSlot';
   final String name;
@@ -437,7 +441,7 @@ final class NetworkSlot {
 }
 
 @JsonSerializable(explicitToJson: true)
-final class PermissionsDict {
+class PermissionsDict {
   final Permission release;
   final Permission collect;
   final Permission remaining;
@@ -466,7 +470,7 @@ enum Permission {
 
 /// Hint information.
 @JsonSerializable(explicitToJson: true)
-final class Hint {
+class Hint {
   @JsonKey(name: 'class', includeToJson: true, required: false)
   final String classKey = 'Hint';
   final int receivingPlayer;
@@ -495,7 +499,7 @@ final class Hint {
 }
 
 @JsonSerializable(explicitToJson: true)
-final class DataPackageContents {
+class DataPackageContents {
   final Map<String, GameData> games;
 
   DataPackageContents(this.games);
@@ -507,7 +511,7 @@ final class DataPackageContents {
 }
 
 @JsonSerializable(fieldRename: FieldRename.snake)
-final class GameData {
+class GameData {
   final Map<String, int> itemNameToId;
   final Map<String, int> locationNameToId;
   final String checksum;
@@ -522,7 +526,7 @@ final class GameData {
 
 /// Deathlink information.
 @JsonSerializable(explicitToJson: true)
-final class DeathLink {
+class DeathLink {
   /// Time of death.
   @JsonKey(toJson: toPythonTimeJson, fromJson: fromPythonTimeJson)
   final DateTime time;

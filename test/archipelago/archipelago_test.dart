@@ -30,7 +30,7 @@ void main() {
 
       when(mockConnector.stream).thenAnswer(
         (_) => Stream.fromIterable([
-          server.RoomInfo(
+          server.RoomInfoMessage(
             networkVersion,
             networkVersion,
             [],
@@ -45,7 +45,7 @@ void main() {
             'potato',
             DateTime.now(),
           ),
-          server.Connected(
+          server.ConnectedMessage(
             0,
             1,
             [NetworkPlayer(0, 1, 'Bob Hamelin', 'Bob')],
@@ -123,13 +123,16 @@ void main() {
       });
       test('Player ID', () {
         final JSON json = {'type': 'player_id', 'text': '1'};
-        expect(JSONMessagePart.fromJson(json).runtimeType, PlayerIDMessagePart);
+        expect(
+          JSONMessagePart.fromJson(json).runtimeType,
+          PlayerIDJSONMessagePart,
+        );
       });
       test('Player name', () {
         final JSON json = {'type': 'player_name', 'text': 'Bob'};
         expect(
           JSONMessagePart.fromJson(json).runtimeType,
-          PlayerNameMessagePart,
+          PlayerNameJSONMessagePart,
         );
       });
       test('Item ID', () {
@@ -139,7 +142,10 @@ void main() {
           'flags': 7,
           'player': 1,
         };
-        expect(JSONMessagePart.fromJson(json).runtimeType, ItemIDMessagePart);
+        expect(
+          JSONMessagePart.fromJson(json).runtimeType,
+          ItemIDJSONMessagePart,
+        );
       });
       test('Item name', () {
         final JSON json = {
@@ -148,13 +154,16 @@ void main() {
           'flags': 7,
           'player': 1,
         };
-        expect(JSONMessagePart.fromJson(json).runtimeType, ItemNameMessagePart);
+        expect(
+          JSONMessagePart.fromJson(json).runtimeType,
+          ItemNameJSONMessagePart,
+        );
       });
       test('Location ID', () {
         final JSON json = {'type': 'location_id', 'text': '1', 'player': 1};
         expect(
           JSONMessagePart.fromJson(json).runtimeType,
-          LocationIDMessagePart,
+          LocationIDJSONMessagePart,
         );
       });
       test('Location name', () {
@@ -165,7 +174,7 @@ void main() {
         };
         expect(
           JSONMessagePart.fromJson(json).runtimeType,
-          LocationNameMessagePart,
+          LocationNameJSONMessagePart,
         );
       });
       test('Entrance name', () {
@@ -175,7 +184,7 @@ void main() {
         };
         expect(
           JSONMessagePart.fromJson(json).runtimeType,
-          EntranceNameMessagePart,
+          EntranceNameJSONMessagePart,
         );
       });
       test('Hint status', () {
@@ -186,7 +195,7 @@ void main() {
         };
         expect(
           JSONMessagePart.fromJson(json).runtimeType,
-          HintStatusMessagePart,
+          HintStatusJSONMessagePart,
         );
       });
       test('Color', () {

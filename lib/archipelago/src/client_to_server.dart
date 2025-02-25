@@ -18,7 +18,7 @@ sealed class ClientMessage {
   fieldRename: FieldRename.snake,
   constructor: '_jsonConstructor',
 )
-final class ConnectMessage extends ClientMessage {
+class ConnectMessage extends ClientMessage {
   @override
   final String cmd = "Connect";
   final String? password;
@@ -91,7 +91,7 @@ final class ConnectMessage extends ClientMessage {
   }
 }
 
-final class _ItemsHandlingFlags {
+class _ItemsHandlingFlags {
   final bool otherWorlds;
   final bool ownWorld;
   final bool startingInventory;
@@ -150,7 +150,7 @@ final class _ItemsHandlingFlags {
 }
 
 @JsonSerializable(explicitToJson: true, fieldRename: FieldRename.snake)
-final class ConnectUpdateMessage extends ClientMessage {
+class ConnectUpdateMessage extends ClientMessage {
   @override
   final String cmd = "ConnectUpdate";
   final _ItemsHandlingFlags _itemsHandling;
@@ -179,7 +179,7 @@ final class ConnectUpdateMessage extends ClientMessage {
 }
 
 @JsonSerializable()
-final class SyncMessage extends ClientMessage {
+class SyncMessage extends ClientMessage {
   @override
   final String cmd = "Sync";
 
@@ -193,7 +193,7 @@ final class SyncMessage extends ClientMessage {
 }
 
 @JsonSerializable()
-final class LocationChecksMessage extends ClientMessage {
+class LocationChecksMessage extends ClientMessage {
   @override
   final String cmd = "LocationChecks";
   final List<int> locations;
@@ -209,7 +209,7 @@ final class LocationChecksMessage extends ClientMessage {
 }
 
 @JsonSerializable(fieldRename: FieldRename.snake)
-final class LocationScoutsMessage extends ClientMessage {
+class LocationScoutsMessage extends ClientMessage {
   @override
   final String cmd = "LocationScouts";
   final List<int> locations;
@@ -230,7 +230,7 @@ final class LocationScoutsMessage extends ClientMessage {
 }
 
 @JsonSerializable(explicitToJson: true)
-final class UpdateHintMessage extends ClientMessage {
+class UpdateHintMessage extends ClientMessage {
   @override
   final String cmd = "UpdateHint";
   final int player;
@@ -247,7 +247,7 @@ final class UpdateHintMessage extends ClientMessage {
 }
 
 @JsonSerializable(explicitToJson: true)
-final class StatusUpdateMessage extends ClientMessage {
+class StatusUpdateMessage extends ClientMessage {
   @override
   final String cmd = "StatusUpdate";
   final ClientStatus status;
@@ -262,7 +262,7 @@ final class StatusUpdateMessage extends ClientMessage {
 }
 
 @JsonSerializable()
-final class SayMessage extends ClientMessage {
+class SayMessage extends ClientMessage {
   @override
   final String cmd = "Say";
   final String text;
@@ -277,7 +277,7 @@ final class SayMessage extends ClientMessage {
 }
 
 @JsonSerializable()
-final class GetDataPackageMessage extends ClientMessage {
+class GetDataPackageMessage extends ClientMessage {
   @override
   final String cmd = "GetDataPackage";
   final List<String>? games;
@@ -292,7 +292,7 @@ final class GetDataPackageMessage extends ClientMessage {
 }
 
 @JsonSerializable()
-final class BounceMessage extends ClientMessage {
+class BounceMessage extends ClientMessage {
   @override
   final String cmd = "Bounce";
   final List<String>? games;
@@ -328,7 +328,7 @@ final class BounceMessage extends ClientMessage {
 }
 
 @JsonSerializable()
-final class GetMessage extends ClientMessage {
+class GetMessage extends ClientMessage {
   @override
   final String cmd = "Get";
   final List<String> keys;
@@ -347,7 +347,7 @@ final class GetMessage extends ClientMessage {
   fieldRename: FieldRename.snake,
   createFactory: false,
 )
-final class SetMessage extends ClientMessage {
+class SetMessage extends ClientMessage {
   @override
   final String cmd = "Set";
   final String key;
@@ -380,7 +380,7 @@ sealed class DataStorageOperation {
 }
 
 @JsonSerializable(explicitToJson: true)
-final class NumericStorageOperation extends DataStorageOperation {
+class NumericStorageOperation extends DataStorageOperation {
   final NumericStorageOperationType operation;
   final num value;
 
@@ -397,7 +397,7 @@ final class NumericStorageOperation extends DataStorageOperation {
 enum NumericStorageOperationType { mul, pow, mod, floor, ceil, max, min }
 
 @JsonSerializable(explicitToJson: true)
-final class BitwiseStorageOperation extends DataStorageOperation {
+class BitwiseStorageOperation extends DataStorageOperation {
   final BitwiseStorageOperationType operation;
   final int value;
 
@@ -414,7 +414,7 @@ final class BitwiseStorageOperation extends DataStorageOperation {
 enum BitwiseStorageOperationType { xor, or, and, leftShift, rightShift }
 
 @JsonSerializable(explicitToJson: true)
-final class ArrayAddStorageOperation extends DataStorageOperation {
+class ArrayAddStorageOperation extends DataStorageOperation {
   final String operation = "add";
   final List<dynamic> value;
 
@@ -429,7 +429,7 @@ final class ArrayAddStorageOperation extends DataStorageOperation {
 }
 
 @JsonSerializable(explicitToJson: true)
-final class DefaultStorageOperation extends DataStorageOperation {
+class DefaultStorageOperation extends DataStorageOperation {
   final String operation = "default";
   final dynamic value = 0;
 
@@ -443,7 +443,7 @@ final class DefaultStorageOperation extends DataStorageOperation {
 }
 
 @JsonSerializable(explicitToJson: true)
-final class DynamicStorageOperation extends DataStorageOperation {
+class DynamicStorageOperation extends DataStorageOperation {
   final DynamicStorageOperationType operation;
   final dynamic value;
 
@@ -469,7 +469,7 @@ enum DynamicStorageOperationType {
 }
 
 @JsonSerializable()
-final class UpdateStorageOperation extends DataStorageOperation {
+class UpdateStorageOperation extends DataStorageOperation {
   final String operation = 'update';
   final Map<dynamic, dynamic> value;
 
@@ -484,7 +484,7 @@ final class UpdateStorageOperation extends DataStorageOperation {
 }
 
 @JsonSerializable()
-final class SetNotifyMessage extends ClientMessage {
+class SetNotifyMessage extends ClientMessage {
   @override
   final String cmd = 'SetNotify';
   final List<String> keys;

@@ -2,9 +2,11 @@ library;
 
 import 'dart:collection';
 
+import 'package:collection/collection.dart';
+
 import 'protocol_types.dart';
 
-final class ArchipelagoRoomInfo {
+class ArchipelagoRoomInfo {
   // In Connected
   List<NetworkPlayer> _players;
   UnmodifiableListView<NetworkPlayer> get players =>
@@ -78,6 +80,17 @@ final class ArchipelagoRoomInfo {
         set.add(x);
         return set;
       });
+
+  String? getSlotAlias(int id) {
+    return _players.firstWhereOrNull((element) => element.slot == id)?.alias;
+  }
+
+  String? getSlotGame(int id) {
+    return _slotInfo.entries
+        .firstWhereOrNull((element) => element.key == id)
+        ?.value
+        .game;
+  }
 
   void _updateCheckedLocations(List<int> newLocations) {
     for (var location in newLocations) {
