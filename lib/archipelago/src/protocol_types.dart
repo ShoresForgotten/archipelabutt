@@ -1,6 +1,7 @@
 /// Common or elaborate complex types used in the archipelago network protocol.
 library;
 
+import 'package:collection/collection.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'protocol_types.g.dart';
@@ -67,6 +68,18 @@ class NetworkItem {
       _$NetworkItemFromJson(json);
 
   Map<String, dynamic> toJson() => _$NetworkItemToJson(this);
+
+  @override
+  int get hashCode => Object.hash(item, location, player, flags);
+
+  @override
+  bool operator ==(Object other) {
+    return other is NetworkItem &&
+        other.item == item &&
+        other.location == location &&
+        other.player == player &&
+        other.flags == flags;
+  }
 }
 
 /// Flags for information about an item.
@@ -121,6 +134,17 @@ class NetworkItemFlags {
     }
     return flags;
   }
+
+  @override
+  int get hashCode => Object.hash(logicalAdvancement, useful, trap);
+
+  @override
+  bool operator ==(Object other) {
+    return other is NetworkItemFlags &&
+        other.logicalAdvancement == logicalAdvancement &&
+        other.useful == useful &&
+        other.trap == trap;
+  }
 }
 
 /// Part of a message sent with PrintJSON.
@@ -162,6 +186,14 @@ sealed class JSONMessagePart {
       return TextJSONMessagePart.fromJson(json);
     }
   }
+
+  @override
+  int get hashCode => text.hashCode;
+
+  @override
+  bool operator ==(Object other) {
+    return other is JSONMessagePart && other.text == text;
+  }
 }
 
 /// Default case. Just contains text.
@@ -172,10 +204,18 @@ class TextJSONMessagePart extends JSONMessagePart {
   const TextJSONMessagePart(super.text);
 
   factory TextJSONMessagePart.fromJson(Map<String, dynamic> json) =>
-      _$TextMessagePartFromJson(json);
+      _$TextJSONMessagePartFromJson(json);
 
   @override
-  Map<String, dynamic> toJson() => _$TextMessagePartToJson(this);
+  Map<String, dynamic> toJson() => _$TextJSONMessagePartToJson(this);
+
+  @override
+  int get hashCode => super.hashCode;
+
+  @override
+  bool operator ==(Object other) {
+    return other is TextJSONMessagePart && other.text == text;
+  }
 }
 
 /// Text is the player id of somebody on the client's team. Should be resolved to a name.
@@ -186,10 +226,18 @@ class PlayerIDJSONMessagePart extends JSONMessagePart {
   const PlayerIDJSONMessagePart(super.text);
 
   factory PlayerIDJSONMessagePart.fromJson(Map<String, dynamic> json) =>
-      _$PlayerIDMessagePartFromJson(json);
+      _$PlayerIDJSONMessagePartFromJson(json);
 
   @override
-  Map<String, dynamic> toJson() => _$PlayerIDMessagePartToJson(this);
+  Map<String, dynamic> toJson() => _$PlayerIDJSONMessagePartToJson(this);
+
+  @override
+  int get hashCode => super.hashCode;
+
+  @override
+  bool operator ==(Object other) {
+    return other is PlayerIDJSONMessagePart && other.text == text;
+  }
 }
 
 /// Text is the name of a player in the session. Can't be resovled to an id.
@@ -200,10 +248,18 @@ class PlayerNameJSONMessagePart extends JSONMessagePart {
   const PlayerNameJSONMessagePart(super.text);
 
   factory PlayerNameJSONMessagePart.fromJson(Map<String, dynamic> json) =>
-      _$PlayerNameMessagePartFromJson(json);
+      _$PlayerNameJSONMessagePartFromJson(json);
 
   @override
-  Map<String, dynamic> toJson() => _$PlayerNameMessagePartToJson(this);
+  Map<String, dynamic> toJson() => _$PlayerNameJSONMessagePartToJson(this);
+
+  @override
+  int get hashCode => super.hashCode;
+
+  @override
+  bool operator ==(Object other) {
+    return other is PlayerNameJSONMessagePart && other.text == text;
+  }
 }
 
 /// Text contains an item id, should be resolved to a name.
@@ -216,10 +272,21 @@ class ItemIDJSONMessagePart extends JSONMessagePart {
   const ItemIDJSONMessagePart(super.text, this.flags, this.player);
 
   factory ItemIDJSONMessagePart.fromJson(Map<String, dynamic> json) =>
-      _$ItemIDMessagePartFromJson(json);
+      _$ItemIDJSONMessagePartFromJson(json);
 
   @override
-  Map<String, dynamic> toJson() => _$ItemIDMessagePartToJson(this);
+  Map<String, dynamic> toJson() => _$ItemIDJSONMessagePartToJson(this);
+
+  @override
+  int get hashCode => Object.hash(text, flags, player);
+
+  @override
+  bool operator ==(Object other) {
+    return other is ItemIDJSONMessagePart &&
+        other.text == text &&
+        other.flags == flags &&
+        other.player == player;
+  }
 }
 
 /// Text contains an item name. Not currently used.
@@ -232,10 +299,21 @@ class ItemNameJSONMessagePart extends JSONMessagePart {
   const ItemNameJSONMessagePart(super.text, this.flags, this.player);
 
   factory ItemNameJSONMessagePart.fromJson(Map<String, dynamic> json) =>
-      _$ItemNameMessagePartFromJson(json);
+      _$ItemNameJSONMessagePartFromJson(json);
 
   @override
-  Map<String, dynamic> toJson() => _$ItemNameMessagePartToJson(this);
+  Map<String, dynamic> toJson() => _$ItemNameJSONMessagePartToJson(this);
+
+  @override
+  int get hashCode => Object.hash(text, flags, player);
+
+  @override
+  bool operator ==(Object other) {
+    return other is ItemNameJSONMessagePart &&
+        other.text == text &&
+        other.flags == flags &&
+        other.player == player;
+  }
 }
 
 /// Text contains a location id, should be resolved to a name.
@@ -247,10 +325,20 @@ class LocationIDJSONMessagePart extends JSONMessagePart {
   const LocationIDJSONMessagePart(super.text, this.player);
 
   factory LocationIDJSONMessagePart.fromJson(Map<String, dynamic> json) =>
-      _$LocationIDMessagePartFromJson(json);
+      _$LocationIDJSONMessagePartFromJson(json);
 
   @override
-  Map<String, dynamic> toJson() => _$LocationIDMessagePartToJson(this);
+  Map<String, dynamic> toJson() => _$LocationIDJSONMessagePartToJson(this);
+
+  @override
+  int get hashCode => Object.hash(text, player);
+
+  @override
+  bool operator ==(Object other) {
+    return other is LocationIDJSONMessagePart &&
+        other.text == text &&
+        other.player == player;
+  }
 }
 
 /// Text contains a location name. Not currently used.
@@ -262,10 +350,20 @@ class LocationNameJSONMessagePart extends JSONMessagePart {
   const LocationNameJSONMessagePart(super.text, this.player);
 
   factory LocationNameJSONMessagePart.fromJson(Map<String, dynamic> json) =>
-      _$LocationNameMessagePartFromJson(json);
+      _$LocationNameJSONMessagePartFromJson(json);
 
   @override
-  Map<String, dynamic> toJson() => _$LocationNameMessagePartToJson(this);
+  Map<String, dynamic> toJson() => _$LocationNameJSONMessagePartToJson(this);
+
+  @override
+  int get hashCode => Object.hash(text, player);
+
+  @override
+  bool operator ==(Object other) {
+    return other is LocationNameJSONMessagePart &&
+        other.text == text &&
+        other.player == player;
+  }
 }
 
 /// Text contains an entrance name. No id mapping.
@@ -276,10 +374,18 @@ class EntranceNameJSONMessagePart extends JSONMessagePart {
   const EntranceNameJSONMessagePart(super.text);
 
   factory EntranceNameJSONMessagePart.fromJson(Map<String, dynamic> json) =>
-      _$EntranceNameMessagePartFromJson(json);
+      _$EntranceNameJSONMessagePartFromJson(json);
 
   @override
-  Map<String, dynamic> toJson() => _$EntranceNameMessagePartToJson(this);
+  Map<String, dynamic> toJson() => _$EntranceNameJSONMessagePartToJson(this);
+
+  @override
+  int get hashCode => super.hashCode;
+
+  @override
+  bool operator ==(Object other) {
+    return other is EntranceNameJSONMessagePart && other.text == text;
+  }
 }
 
 /// The [HintStatus] of a hint.
@@ -291,10 +397,20 @@ class HintStatusJSONMessagePart extends JSONMessagePart {
   const HintStatusJSONMessagePart(super.text, this.status);
 
   @override
-  Map<String, dynamic> toJson() => _$HintStatusMessagePartToJson(this);
+  Map<String, dynamic> toJson() => _$HintStatusJSONMessagePartToJson(this);
 
   factory HintStatusJSONMessagePart.fromJson(Map<String, dynamic> json) =>
-      _$HintStatusMessagePartFromJson(json);
+      _$HintStatusJSONMessagePartFromJson(json);
+
+  @override
+  int get hashCode => Object.hash(text, status);
+
+  @override
+  bool operator ==(Object other) {
+    return other is HintStatusJSONMessagePart &&
+        other.text == text &&
+        other.status == status;
+  }
 }
 
 /// Regular text that should be colored.
@@ -306,10 +422,20 @@ class ColorJSONMessagePart extends JSONMessagePart {
   const ColorJSONMessagePart(super.text, this.color);
 
   @override
-  Map<String, dynamic> toJson() => _$ColorMessagePartToJson(this);
+  Map<String, dynamic> toJson() => _$ColorJSONMessagePartToJson(this);
 
   factory ColorJSONMessagePart.fromJson(Map<String, dynamic> json) =>
-      _$ColorMessagePartFromJson(json);
+      _$ColorJSONMessagePartFromJson(json);
+
+  @override
+  int get hashCode => Object.hash(text, color);
+
+  @override
+  bool operator ==(Object other) {
+    return other is ColorJSONMessagePart &&
+        other.text == text &&
+        other.color == color;
+  }
 }
 
 /// The variations of hint statuses.
@@ -420,6 +546,14 @@ class SlotType {
     }
     return flags;
   }
+
+  @override
+  int get hashCode => Object.hash(player, group);
+
+  @override
+  bool operator ==(Object other) {
+    return other is SlotType && other.player == player && other.group == group;
+  }
 }
 
 /// Static information about a slot.
@@ -438,6 +572,18 @@ class NetworkSlot {
       _$NetworkSlotFromJson(json);
 
   Map<String, dynamic> toJson() => _$NetworkSlotToJson(this);
+
+  @override
+  int get hashCode => Object.hash(name, game, type, groupMembers);
+
+  @override
+  bool operator ==(Object other) {
+    return other is NetworkSlot &&
+        other.name == name &&
+        other.game == game &&
+        other.type == type &&
+        ListEquality().equals(other.groupMembers, groupMembers);
+  }
 }
 
 @JsonSerializable(explicitToJson: true)
@@ -452,6 +598,17 @@ class PermissionsDict {
       _$PermissionsDictFromJson(json);
 
   Map<String, dynamic> toJson() => _$PermissionsDictToJson(this);
+
+  @override
+  int get hashCode => Object.hash(release, collect, remaining);
+
+  @override
+  bool operator ==(Object other) {
+    return other is PermissionsDict &&
+        other.release == release &&
+        other.collect == collect &&
+        other.remaining == remaining;
+  }
 }
 
 /// Permissions for commands.
@@ -496,6 +653,31 @@ class Hint {
   factory Hint.fromJson(Map<String, dynamic> json) => _$HintFromJson(json);
 
   Map<String, dynamic> toJson() => _$HintToJson(this);
+
+  @override
+  int get hashCode => Object.hash(
+    receivingPlayer,
+    findingPlayer,
+    location,
+    item,
+    found,
+    entrance,
+    flags,
+    status,
+  );
+
+  @override
+  bool operator ==(Object other) {
+    return other is Hint &&
+        other.receivingPlayer == receivingPlayer &&
+        other.findingPlayer == findingPlayer &&
+        other.location == location &&
+        other.item == item &&
+        other.found == found &&
+        other.entrance == entrance &&
+        other.flags == flags &&
+        other.status == status;
+  }
 }
 
 @JsonSerializable(explicitToJson: true)
@@ -508,6 +690,15 @@ class DataPackageContents {
       _$DataPackageContentsFromJson(json);
 
   Map<String, dynamic> toJson() => _$DataPackageContentsToJson(this);
+
+  @override
+  int get hashCode => games.hashCode;
+
+  @override
+  bool operator ==(Object other) {
+    return other is DataPackageContents &&
+        MapEquality().equals(other.games, games);
+  }
 }
 
 @JsonSerializable(fieldRename: FieldRename.snake)
@@ -522,6 +713,18 @@ class GameData {
       _$GameDataFromJson(json);
 
   Map<String, dynamic> toJson() => _$GameDataToJson(this);
+
+  @override
+  int get hashCode => Object.hash(itemNameToId, locationNameToId, checksum);
+
+  @override
+  bool operator ==(Object other) {
+    final MapEquality me = MapEquality();
+    return other is GameData &&
+        me.equals(other.itemNameToId, itemNameToId) &&
+        me.equals(locationNameToId, locationNameToId) &&
+        other.checksum == checksum;
+  }
 }
 
 /// Deathlink information.
@@ -542,6 +745,17 @@ class DeathLink {
 
   factory DeathLink.fromJson(Map<String, dynamic> json) =>
       _$DeathLinkFromJson(json);
+
+  @override
+  int get hashCode => Object.hash(time, cause, source);
+
+  @override
+  bool operator ==(Object other) {
+    return other is DeathLink &&
+        other.time == time &&
+        other.cause == cause &&
+        other.source == source;
+  }
 }
 
 double toPythonTimeJson(DateTime time) =>

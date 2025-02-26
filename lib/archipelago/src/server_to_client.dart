@@ -40,10 +40,13 @@ sealed class ServerMessage {
         throw 'Invalid message command';
     }
   }
+
+  Map<String, dynamic> toJson();
 }
 
 @JsonSerializable(explicitToJson: true, fieldRename: FieldRename.snake)
 class RoomInfoMessage extends ServerMessage {
+  @JsonKey(includeToJson: true, includeFromJson: true)
   @override
   final String cmd = 'RoomInfo';
   final NetworkVersion version;
@@ -73,13 +76,15 @@ class RoomInfoMessage extends ServerMessage {
   );
 
   factory RoomInfoMessage.fromJson(Map<String, dynamic> json) =>
-      _$RoomInfoFromJson(json);
+      _$RoomInfoMessageFromJson(json);
 
-  Map<String, dynamic> toJson() => _$RoomInfoToJson(this);
+  @override
+  Map<String, dynamic> toJson() => _$RoomInfoMessageToJson(this);
 }
 
 @JsonSerializable(explicitToJson: true)
 class ConnectionRefusedMessage extends ServerMessage {
+  @JsonKey(includeToJson: true, includeFromJson: true)
   @override
   final String cmd = "ConnectionRefused";
   final List<ConnectionRefusedReason>? errors;
@@ -87,9 +92,10 @@ class ConnectionRefusedMessage extends ServerMessage {
   ConnectionRefusedMessage([this.errors]);
 
   factory ConnectionRefusedMessage.fromJson(Map<String, dynamic> json) =>
-      _$ConnectionRefusedFromJson(json);
+      _$ConnectionRefusedMessageFromJson(json);
 
-  Map<String, dynamic> toJson() => _$ConnectionRefusedToJson(this);
+  @override
+  Map<String, dynamic> toJson() => _$ConnectionRefusedMessageToJson(this);
 }
 
 @JsonEnum(fieldRename: FieldRename.pascal)
@@ -103,6 +109,7 @@ enum ConnectionRefusedReason {
 
 @JsonSerializable(explicitToJson: true, fieldRename: FieldRename.snake)
 class ConnectedMessage extends ServerMessage {
+  @JsonKey(includeToJson: true, includeFromJson: true)
   @override
   final String cmd = "Connected";
   final int team;
@@ -129,13 +136,15 @@ class ConnectedMessage extends ServerMessage {
   ]);
 
   factory ConnectedMessage.fromJson(Map<String, dynamic> json) =>
-      _$ConnectedFromJson(json);
+      _$ConnectedMessageFromJson(json);
 
-  Map<String, dynamic> toJson() => _$ConnectedToJson(this);
+  @override
+  Map<String, dynamic> toJson() => _$ConnectedMessageToJson(this);
 }
 
 @JsonSerializable(explicitToJson: true)
 class ReceivedItemsMessage extends ServerMessage {
+  @JsonKey(includeToJson: true, includeFromJson: true)
   @override
   final String cmd = "ReceivedItems";
   final int index;
@@ -144,13 +153,15 @@ class ReceivedItemsMessage extends ServerMessage {
   ReceivedItemsMessage(this.index, this.items);
 
   factory ReceivedItemsMessage.fromJson(Map<String, dynamic> json) =>
-      _$ReceivedItemsFromJson(json);
+      _$ReceivedItemsMessageFromJson(json);
 
-  Map<String, dynamic> toJson() => _$ReceivedItemsToJson(this);
+  @override
+  Map<String, dynamic> toJson() => _$ReceivedItemsMessageToJson(this);
 }
 
 @JsonSerializable(explicitToJson: true)
 class LocationInfoMessage extends ServerMessage {
+  @JsonKey(includeToJson: true, includeFromJson: true)
   @override
   final String cmd = "LocationInfo";
   final List<NetworkItem> locations;
@@ -158,13 +169,15 @@ class LocationInfoMessage extends ServerMessage {
   LocationInfoMessage(this.locations);
 
   factory LocationInfoMessage.fromJson(Map<String, dynamic> json) =>
-      _$LocationInfoFromJson(json);
+      _$LocationInfoMessageFromJson(json);
 
-  Map<String, dynamic> toJson() => _$LocationInfoToJson(this);
+  @override
+  Map<String, dynamic> toJson() => _$LocationInfoMessageToJson(this);
 }
 
 @JsonSerializable(explicitToJson: true, fieldRename: FieldRename.snake)
 class RoomUpdateMessage extends ServerMessage {
+  @JsonKey(includeToJson: true, includeFromJson: true)
   @override
   final String cmd = "RoomUpdate";
   final List<NetworkPlayer>? players;
@@ -218,13 +231,15 @@ class RoomUpdateMessage extends ServerMessage {
   });
 
   factory RoomUpdateMessage.fromJson(Map<String, dynamic> json) =>
-      _$RoomUpdateFromJson(json);
+      _$RoomUpdateMessageFromJson(json);
 
-  Map<String, dynamic> toJson() => _$RoomUpdateToJson(this);
+  @override
+  Map<String, dynamic> toJson() => _$RoomUpdateMessageToJson(this);
 }
 
 @JsonSerializable(explicitToJson: true)
 class PrintJSONMessage extends ServerMessage {
+  @JsonKey(includeToJson: true, includeFromJson: true)
   @override
   final String cmd = "PrintJSON";
   final List<JSONMessagePart> data;
@@ -252,9 +267,10 @@ class PrintJSONMessage extends ServerMessage {
   });
 
   factory PrintJSONMessage.fromJson(Map<String, dynamic> json) =>
-      _$PrintJSONFromJson(json);
+      _$PrintJSONMessageFromJson(json);
 
-  Map<String, dynamic> toJson() => _$PrintJSONToJson(this);
+  @override
+  Map<String, dynamic> toJson() => _$PrintJSONMessageToJson(this);
 }
 
 @JsonEnum(valueField: 'text')
@@ -281,6 +297,7 @@ enum PrintJSONType {
 
 @JsonSerializable(explicitToJson: true)
 class DataPackageMessage extends ServerMessage {
+  @JsonKey(includeToJson: true, includeFromJson: true)
   @override
   final String cmd = "DataPackage";
   final DataPackageContents data;
@@ -288,13 +305,15 @@ class DataPackageMessage extends ServerMessage {
   DataPackageMessage(this.data);
 
   factory DataPackageMessage.fromJson(Map<String, dynamic> json) =>
-      _$DataPackageFromJson(json);
+      _$DataPackageMessageFromJson(json);
 
-  Map<String, dynamic> toJson() => _$DataPackageToJson(this);
+  @override
+  Map<String, dynamic> toJson() => _$DataPackageMessageToJson(this);
 }
 
 @JsonSerializable()
 class BouncedMessage extends ServerMessage {
+  @JsonKey(includeToJson: true, includeFromJson: true)
   @override
   final String cmd = "Bounced";
   final List<String>? games;
@@ -305,13 +324,15 @@ class BouncedMessage extends ServerMessage {
   BouncedMessage(this.data, {this.games, this.slots, this.tags});
 
   factory BouncedMessage.fromJson(Map<String, dynamic> json) =>
-      _$BouncedFromJson(json);
+      _$BouncedMessageFromJson(json);
 
-  Map<String, dynamic> toJson() => _$BouncedToJson(this);
+  @override
+  Map<String, dynamic> toJson() => _$BouncedMessageToJson(this);
 }
 
 @JsonSerializable(explicitToJson: true, fieldRename: FieldRename.snake)
 class InvalidPacketMessage extends ServerMessage {
+  @JsonKey(includeToJson: true, includeFromJson: true)
   @override
   final String cmd = "InvalidPacket";
   final PacketProblemType type;
@@ -321,9 +342,10 @@ class InvalidPacketMessage extends ServerMessage {
   InvalidPacketMessage(this.type, this.originalCommand, this.text);
 
   factory InvalidPacketMessage.fromJson(Map<String, dynamic> json) =>
-      _$InvalidPacketFromJson(json);
+      _$InvalidPacketMessageFromJson(json);
 
-  Map<String, dynamic> toJson() => _$InvalidPacketToJson(this);
+  @override
+  Map<String, dynamic> toJson() => _$InvalidPacketMessageToJson(this);
 }
 
 @JsonEnum()
@@ -331,6 +353,7 @@ enum PacketProblemType { cmd, arguments }
 
 @JsonSerializable()
 class RetrievedMessage extends ServerMessage {
+  @JsonKey(includeToJson: true, includeFromJson: true)
   @override
   final String cmd = "Retrieved";
   final Map<String, dynamic> keys;
@@ -338,13 +361,15 @@ class RetrievedMessage extends ServerMessage {
   RetrievedMessage(this.keys);
 
   factory RetrievedMessage.fromJson(Map<String, dynamic> json) =>
-      _$RetrievedFromJson(json);
+      _$RetrievedMessageFromJson(json);
 
-  Map<String, dynamic> toJson() => _$RetrievedToJson(this);
+  @override
+  Map<String, dynamic> toJson() => _$RetrievedMessageToJson(this);
 }
 
 @JsonSerializable(fieldRename: FieldRename.snake)
 class SetReplyMessage extends ServerMessage {
+  @JsonKey(includeToJson: true, includeFromJson: true)
   @override
   final String cmd = "SetReply";
   final String key;
@@ -355,7 +380,8 @@ class SetReplyMessage extends ServerMessage {
   SetReplyMessage(this.key, this.value, this.originalValue, this.slot);
 
   factory SetReplyMessage.fromJson(Map<String, dynamic> json) =>
-      _$SetReplyFromJson(json);
+      _$SetReplyMessageFromJson(json);
 
-  Map<String, dynamic> toJson() => _$SetReplyToJson(this);
+  @override
+  Map<String, dynamic> toJson() => _$SetReplyMessageToJson(this);
 }

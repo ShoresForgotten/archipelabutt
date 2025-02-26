@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:test/test.dart';
 import 'package:mockito/annotations.dart';
@@ -24,7 +23,7 @@ typedef JSON = Map<String, dynamic>;
 
 void main() {
   group('Client API', () {
-    test('Connect without GetDataPackage', () async {
+    test('Handshake requesting no DataPackages', () async {
       final MockArchipelagoConnector mockConnector = MockArchipelagoConnector();
       final NetworkVersion networkVersion = NetworkVersion(0, 5, 1);
 
@@ -35,9 +34,7 @@ void main() {
             networkVersion,
             [],
             false,
-            Permission.auto,
-            Permission.auto,
-            Permission.auto,
+            PermissionsDict(Permission.auto, Permission.auto, Permission.auto),
             5,
             1,
             [],
@@ -58,20 +55,14 @@ void main() {
       );
       final uuid = Uuid().v4();
 
-      final clientSettings = ArchipelagoClientSettings(
+      final archipelagoClient = await ArchipelagoClient.connect(
+        host: 'example.org',
+        port: 38281,
+        name: 'Bob Hamelin',
+        uuid: uuid,
         game: 'Spacewar',
-        tags: [],
         receiveOtherWorlds: true,
-        receiveOwnWorld: false,
-        receiveStartingInventory: false,
-        receiveSlotData: false,
-      );
-
-      final archipelagoClient = await ArchipelagoClient.connectUsingConnector(
-        mockConnector,
-        clientSettings,
-        'Bob',
-        uuid,
+        connector: mockConnector,
       );
 
       expect(
@@ -79,7 +70,7 @@ void main() {
         client.ConnectMessage(
           null,
           'Spacewar',
-          'Bob',
+          'Bob Hamelin',
           uuid,
           networkVersion,
           true,
@@ -89,6 +80,67 @@ void main() {
           false,
         ),
       );
+    });
+    test('Handshake requesting a DataPackage', () async {
+      final MockArchipelagoConnector mockConnector = MockArchipelagoConnector();
+      final NetworkVersion networkVersion = NetworkVersion(0, 5, 1);
+
+      when(mockConnector.stream).thenAnswer(
+        (_) => Stream.fromIterable([
+          server.RoomInfoMessage(
+            networkVersion,
+            networkVersion,
+            [],
+            false,
+            PermissionsDict(Permission.auto, Permission.auto, Permission.auto),
+            5,
+            1,
+            ['Spacewar'],
+            {'Spacewar': 'loremipsum'},
+            'potato',
+            DateTime.now(),
+          ),
+          server.DataPackageMessage(
+            DataPackageContents({'Spacewar': GameData({}, {}, 'loremipsum')}),
+          ),
+          server.ConnectedMessage(
+            0,
+            1,
+            [NetworkPlayer(0, 1, 'Bob Hamelin', 'Bob')],
+            [],
+            [],
+            {1: NetworkSlot('Bob', 'Spacewar', SlotType(true, false), [])},
+            0,
+          ),
+        ]),
+      );
+      final uuid = Uuid().v4();
+
+      final archipelagoClient = await ArchipelagoClient.connect(
+        host: 'example.org',
+        port: 38281,
+        name: 'Bob Hamelin',
+        uuid: uuid,
+        game: 'Spacewar',
+        receiveOtherWorlds: true,
+        connector: mockConnector,
+      );
+
+      expect(verify(mockConnector.send(captureAny)).captured, [
+        client.GetDataPackageMessage(['Spacewar']),
+        client.ConnectMessage(
+          null,
+          'Spacewar',
+          'Bob Hamelin',
+          uuid,
+          networkVersion,
+          true,
+          false,
+          false,
+          [],
+          false,
+        ),
+      ]);
     });
   });
   group('Miscellaneous types', () {
@@ -119,7 +171,7 @@ void main() {
     group('JSON message part deserialization', () {
       test('Text', () {
         final JSON json = {'type': 'text', 'text': 'Lorem ipsum'};
-        expect(JSONMessagePart.fromJson(json).runtimeType, TextMessagePart);
+        expect(JSONMessagePart.fromJson(json).runtimeType, TextJSONMessagePart);
       });
       test('Player ID', () {
         final JSON json = {'type': 'player_id', 'text': '1'};
@@ -204,7 +256,10 @@ void main() {
           'text': 'Lorem ipsum',
           'color': 'magenta',
         };
-        expect(JSONMessagePart.fromJson(json).runtimeType, ColorMessagePart);
+        expect(
+          JSONMessagePart.fromJson(json).runtimeType,
+          ColorJSONMessagePart,
+        );
       });
     });
     test('Slot type deserialization', () {

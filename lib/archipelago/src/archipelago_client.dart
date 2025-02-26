@@ -48,7 +48,7 @@ class ArchipelagoClient {
     required int port,
     required String name,
     required String uuid,
-    ArchipelagoDataStorage storage = const ArchipelagoDataStorage({}),
+    ArchipelagoDataStorage? storage,
     List<String> tags = const [],
     String? game,
     String? password,
@@ -70,6 +70,13 @@ class ArchipelagoClient {
       receiveSlotData: receiveSlotData,
     );
 
+    ArchipelagoDataStorage store;
+    if (storage == null) {
+      store = ArchipelagoDataStorage(<String, ArchipelagoGame>{});
+    } else {
+      store = storage;
+    }
+
     ArchipelagoConnector conn;
     if (connector == null) {
       conn = ArchipelagoConnector(host, port);
@@ -77,7 +84,7 @@ class ArchipelagoClient {
       conn = connector;
     }
     await conn.ready;
-    return await ArchipelagoClient._handshake(conn, clientSettings, storage);
+    return await ArchipelagoClient._handshake(conn, clientSettings, store);
   }
 
   static Future<ArchipelagoClient> _handshake(
@@ -89,12 +96,12 @@ class ArchipelagoClient {
 
     final queue = _MessageQueue<ServerMessage>();
     final queueStreamController = stream.listen(
-      (event) => queue.addMessage(ServerMessage.fromJson(event)),
+      (event) => queue.addMessage(event),
     );
 
     final ServerMessage roomInfoMessage = await queue.getMessage();
     if (roomInfoMessage is! RoomInfoMessage) {
-      throw HandshakeException(HandshakeExceptionType.didNotRecieveRoomInfo);
+      throw HandshakeException('RoomInfo', roomInfoMessage);
     }
 
     final Map<String, String> checksums = storage.games.map(
@@ -102,16 +109,18 @@ class ArchipelagoClient {
     );
     final List<String> gamesToGet =
         roomInfoMessage.datapackageChecksums.entries
-            .where((entry) => checksums[entry.key] == entry.value)
+            .where(
+              (entry) =>
+                  checksums[entry.key] != entry.value ||
+                  !checksums.keys.contains(entry.key),
+            )
             .map((e) => e.key)
             .toList();
     if (gamesToGet.isNotEmpty) {
-      connector.send(GetDataPackageMessage(gamesToGet).toJson());
+      connector.send(GetDataPackageMessage(gamesToGet));
       final ServerMessage dataPackage = await queue.getMessage();
       if (dataPackage is! DataPackageMessage) {
-        throw HandshakeException(
-          HandshakeExceptionType.didNotRecieveDataPackage,
-        );
+        throw HandshakeException('DataPackage', dataPackage);
       }
       dataPackage.data.games.forEach(
         (key, value) => storage.updateGame(
@@ -137,7 +146,7 @@ class ArchipelagoClient {
         clientSettings.receiveStartingInventory,
         clientSettings.tags,
         clientSettings.receiveSlotData,
-      ).toJson(),
+      ),
     );
 
     final ServerMessage connected = await queue.getMessage();
@@ -147,9 +156,7 @@ class ArchipelagoClient {
     if (connected is ConnectionRefusedMessage) {
       throw ArchipelagoConnectionRefused(connected.errors);
     } else if (connected is! ConnectedMessage) {
-      throw HandshakeException(
-        HandshakeExceptionType.didNotRecieveConnectionResponse,
-      );
+      throw HandshakeException('Connected', connected);
     }
 
     final ArchipelagoRoomInfo roomInfo = ArchipelagoRoomInfo(
@@ -176,7 +183,7 @@ class ArchipelagoClient {
       clientSettings,
       roomInfo,
       storage,
-      stream.map((e) => ServerMessage.fromJson(e)),
+      stream,
     );
   }
 
@@ -396,7 +403,7 @@ class ArchipelagoClient {
 
   /// Send a message to the server.
   void _send(ClientMessage message) {
-    _connector.send(message.toJson());
+    _connector.send(message);
   }
 }
 
@@ -432,18 +439,17 @@ abstract interface class DataPackageHandler {
 }
 
 class HandshakeException implements Exception {
-  final HandshakeExceptionType type;
-  final String? description;
-  HandshakeException(this.type, [this.description]);
+  final String expected;
+  final ServerMessage received;
+  HandshakeException(this.expected, this.received);
+
+  @override
+  String toString() {
+    return 'Handshake Exception: Expected $expected. Received $received';
+  }
 }
 
 class ArchipelagoConnectionRefused implements Exception {
   final List<ConnectionRefusedReason>? errors;
   ArchipelagoConnectionRefused(this.errors);
-}
-
-enum HandshakeExceptionType {
-  didNotRecieveRoomInfo,
-  didNotRecieveDataPackage,
-  didNotRecieveConnectionResponse,
 }

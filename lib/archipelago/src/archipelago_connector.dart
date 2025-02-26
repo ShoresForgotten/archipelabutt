@@ -3,6 +3,8 @@ library;
 import 'dart:async';
 import 'dart:convert';
 
+import 'client_to_server.dart';
+import 'server_to_client.dart';
 import 'package:stream_channel/stream_channel.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -12,7 +14,7 @@ interface class ArchipelagoConnector {
   final WebSocketChannel _channel;
   Future<void> get ready => _channel.ready;
   final StreamSink _sink;
-  final Stream<Map<String, dynamic>> stream;
+  final Stream<ServerMessage> stream;
 
   ArchipelagoConnector._(this._channel, this._sink, this.stream);
 
@@ -22,18 +24,18 @@ interface class ArchipelagoConnector {
     );
     final stream =
         channel.stream
-            .map((event) => jsonDecode(event) as List<Map<String, dynamic>>)
+            .map((event) => jsonDecode(event) as List<ServerMessage>)
             .expand((x) => x)
             .asBroadcastStream();
     final StreamSink sink = channel.sink;
     return ArchipelagoConnector._(channel, sink, stream);
   }
 
-  void send(Map<String, dynamic> message) {
+  void send(ClientMessage message) {
     sendMultiple([message]);
   }
 
-  void sendMultiple(List<Map<String, dynamic>> messages) {
+  void sendMultiple(List<ClientMessage> messages) {
     _sink.add(jsonEncode(messages));
   }
 }

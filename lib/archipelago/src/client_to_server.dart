@@ -19,6 +19,7 @@ sealed class ClientMessage {
   constructor: '_jsonConstructor',
 )
 class ConnectMessage extends ClientMessage {
+  @JsonKey(includeToJson: true, includeFromJson: true)
   @override
   final String cmd = "Connect";
   final String? password;
@@ -26,7 +27,11 @@ class ConnectMessage extends ClientMessage {
   final String name;
   final String uuid;
   final NetworkVersion version;
+  //TODO: make this work without analysis complaining
   final _ItemsHandlingFlags? itemsHandling;
+  bool? get receiveOtherWorlds => itemsHandling?.otherWorlds;
+  bool? get receiveOwnWorld => itemsHandling?.ownWorld;
+  bool? get receiveStartingInventory => itemsHandling?.startingInventory;
   final List<String> tags;
   final bool slotData;
 
@@ -72,7 +77,9 @@ class ConnectMessage extends ClientMessage {
     name,
     uuid,
     version,
-    itemsHandling,
+    receiveOtherWorlds,
+    receiveOwnWorld,
+    receiveStartingInventory,
     tags,
     slotData,
   );
@@ -85,7 +92,9 @@ class ConnectMessage extends ClientMessage {
         other.name == name &&
         other.uuid == uuid &&
         other.version == version &&
-        other.itemsHandling == itemsHandling &&
+        other.receiveOtherWorlds == receiveOtherWorlds &&
+        other.receiveOwnWorld == receiveOwnWorld &&
+        other.receiveStartingInventory == receiveStartingInventory &&
         ListEquality().equals(other.tags, tags) &&
         other.slotData == slotData;
   }
@@ -151,6 +160,7 @@ class _ItemsHandlingFlags {
 
 @JsonSerializable(explicitToJson: true, fieldRename: FieldRename.snake)
 class ConnectUpdateMessage extends ClientMessage {
+  @JsonKey(includeToJson: true, includeFromJson: true)
   @override
   final String cmd = "ConnectUpdate";
   final _ItemsHandlingFlags _itemsHandling;
@@ -176,10 +186,28 @@ class ConnectUpdateMessage extends ClientMessage {
 
   @override
   Map<String, dynamic> toJson() => _$ConnectUpdateMessageToJson(this);
+
+  @override
+  int get hashCode => Object.hash(
+    receiveOtherWorlds,
+    receiveOwnWorld,
+    receiveStartingInventory,
+    tags,
+  );
+
+  @override
+  bool operator ==(Object other) {
+    return other is ConnectUpdateMessage &&
+        other.receiveOtherWorlds == receiveOtherWorlds &&
+        other.receiveOwnWorld == receiveOwnWorld &&
+        other.receiveStartingInventory == receiveStartingInventory &&
+        ListEquality().equals(other.tags, tags);
+  }
 }
 
 @JsonSerializable()
 class SyncMessage extends ClientMessage {
+  @JsonKey(includeToJson: true, includeFromJson: true)
   @override
   final String cmd = "Sync";
 
@@ -190,10 +218,19 @@ class SyncMessage extends ClientMessage {
 
   @override
   Map<String, dynamic> toJson() => _$SyncMessageToJson(this);
+
+  @override
+  int get hashCode => 0;
+
+  @override
+  bool operator ==(Object other) {
+    return other is SyncMessage;
+  }
 }
 
 @JsonSerializable()
 class LocationChecksMessage extends ClientMessage {
+  @JsonKey(includeToJson: true, includeFromJson: true)
   @override
   final String cmd = "LocationChecks";
   final List<int> locations;
@@ -206,10 +243,20 @@ class LocationChecksMessage extends ClientMessage {
 
   @override
   Map<String, dynamic> toJson() => _$LocationChecksMessageToJson(this);
+
+  @override
+  int get hashCode => locations.hashCode;
+
+  @override
+  bool operator ==(Object other) {
+    return other is LocationChecksMessage &&
+        ListEquality().equals(other.locations, locations);
+  }
 }
 
 @JsonSerializable(fieldRename: FieldRename.snake)
 class LocationScoutsMessage extends ClientMessage {
+  @JsonKey(includeToJson: true, includeFromJson: true)
   @override
   final String cmd = "LocationScouts";
   final List<int> locations;
@@ -227,10 +274,21 @@ class LocationScoutsMessage extends ClientMessage {
 
   @override
   Map<String, dynamic> toJson() => _$LocationScoutsMessageToJson(this);
+
+  @override
+  int get hashCode => Object.hash(locations, createAsHint);
+
+  @override
+  bool operator ==(Object other) {
+    return other is LocationScoutsMessage &&
+        ListEquality().equals(other.locations, locations) &&
+        other.createAsHint == createAsHint;
+  }
 }
 
 @JsonSerializable(explicitToJson: true)
 class UpdateHintMessage extends ClientMessage {
+  @JsonKey(includeToJson: true, includeFromJson: true)
   @override
   final String cmd = "UpdateHint";
   final int player;
@@ -244,10 +302,22 @@ class UpdateHintMessage extends ClientMessage {
 
   @override
   Map<String, dynamic> toJson() => _$UpdateHintMessageToJson(this);
+
+  @override
+  int get hashCode => Object.hash(player, location, status);
+
+  @override
+  bool operator ==(Object other) {
+    return other is UpdateHintMessage &&
+        other.player == player &&
+        other.location == location &&
+        other.status == status;
+  }
 }
 
 @JsonSerializable(explicitToJson: true)
 class StatusUpdateMessage extends ClientMessage {
+  @JsonKey(includeToJson: true, includeFromJson: true)
   @override
   final String cmd = "StatusUpdate";
   final ClientStatus status;
@@ -259,10 +329,19 @@ class StatusUpdateMessage extends ClientMessage {
 
   @override
   Map<String, dynamic> toJson() => _$StatusUpdateMessageToJson(this);
+
+  @override
+  int get hashCode => status.hashCode;
+
+  @override
+  bool operator ==(Object other) {
+    return other is StatusUpdateMessage && other.status == status;
+  }
 }
 
 @JsonSerializable()
 class SayMessage extends ClientMessage {
+  @JsonKey(includeToJson: true, includeFromJson: true)
   @override
   final String cmd = "Say";
   final String text;
@@ -274,10 +353,19 @@ class SayMessage extends ClientMessage {
 
   @override
   Map<String, dynamic> toJson() => _$SayMessageToJson(this);
+
+  @override
+  int get hashCode => text.hashCode;
+
+  @override
+  bool operator ==(Object other) {
+    return other is SayMessage && other.text == text;
+  }
 }
 
 @JsonSerializable()
 class GetDataPackageMessage extends ClientMessage {
+  @JsonKey(includeToJson: true, includeFromJson: true)
   @override
   final String cmd = "GetDataPackage";
   final List<String>? games;
@@ -289,10 +377,20 @@ class GetDataPackageMessage extends ClientMessage {
 
   @override
   Map<String, dynamic> toJson() => _$GetDataPackageMessageToJson(this);
+
+  @override
+  int get hashCode => games.hashCode;
+
+  @override
+  bool operator ==(Object other) {
+    return other is GetDataPackageMessage &&
+        ListEquality().equals(other.games, games);
+  }
 }
 
 @JsonSerializable()
 class BounceMessage extends ClientMessage {
+  @JsonKey(includeToJson: true, includeFromJson: true)
   @override
   final String cmd = "Bounce";
   final List<String>? games;
@@ -325,10 +423,24 @@ class BounceMessage extends ClientMessage {
 
   @override
   Map<String, dynamic> toJson() => _$BounceMessageToJson(this);
+
+  @override
+  int get hashCode => Object.hash(games, slots, tags, data);
+
+  @override
+  bool operator ==(Object other) {
+    final ListEquality le = ListEquality();
+    return other is BounceMessage &&
+        le.equals(other.games, games) &&
+        le.equals(other.slots, slots) &&
+        le.equals(other.tags, tags) &&
+        MapEquality().equals(other.data, data);
+  }
 }
 
 @JsonSerializable()
 class GetMessage extends ClientMessage {
+  @JsonKey(includeToJson: true, includeFromJson: true)
   @override
   final String cmd = "Get";
   final List<String> keys;
@@ -340,6 +452,14 @@ class GetMessage extends ClientMessage {
 
   @override
   Map<String, dynamic> toJson() => _$GetMessageToJson(this);
+
+  @override
+  int get hashCode => keys.hashCode;
+
+  @override
+  bool operator ==(Object other) {
+    return other is GetMessage && ListEquality().equals(other.keys, keys);
+  }
 }
 
 @JsonSerializable(
@@ -348,6 +468,7 @@ class GetMessage extends ClientMessage {
   createFactory: false,
 )
 class SetMessage extends ClientMessage {
+  @JsonKey(includeToJson: true, includeFromJson: true)
   @override
   final String cmd = "Set";
   final String key;
@@ -373,6 +494,18 @@ class SetMessage extends ClientMessage {
 
   @override
   Map<String, dynamic> toJson() => _$SetMessageToJson(this);
+
+  @override
+  int get hashCode => Object.hash(key, defaultValue, wantReply, operations);
+
+  @override
+  bool operator ==(Object other) {
+    return other is SetMessage &&
+        other.key == key &&
+        other.defaultValue == defaultValue &&
+        other.wantReply == wantReply &&
+        ListEquality().equals(other.operations, operations);
+  }
 }
 
 sealed class DataStorageOperation {
@@ -391,6 +524,16 @@ class NumericStorageOperation extends DataStorageOperation {
 
   @override
   Map<String, dynamic> toJson() => _$NumericStorageOperationToJson(this);
+
+  @override
+  int get hashCode => Object.hash(operation, value);
+
+  @override
+  bool operator ==(Object other) {
+    return other is NumericStorageOperation &&
+        other.operation == operation &&
+        other.value == value;
+  }
 }
 
 @JsonEnum()
@@ -408,6 +551,16 @@ class BitwiseStorageOperation extends DataStorageOperation {
 
   @override
   Map<String, dynamic> toJson() => _$BitwiseStorageOperationToJson(this);
+
+  @override
+  int get hashCode => Object.hash(operation, value);
+
+  @override
+  bool operator ==(Object other) {
+    return other is BitwiseStorageOperation &&
+        other.operation == operation &&
+        other.value == value;
+  }
 }
 
 @JsonEnum(fieldRename: FieldRename.snake)
@@ -426,6 +579,15 @@ class ArrayAddStorageOperation extends DataStorageOperation {
 
   @override
   Map<String, dynamic> toJson() => _$ArrayAddStorageOperationToJson(this);
+
+  @override
+  int get hashCode => value.hashCode;
+
+  @override
+  bool operator ==(Object other) {
+    return other is ArrayAddStorageOperation &&
+        ListEquality().equals(other.value, value);
+  }
 }
 
 @JsonSerializable(explicitToJson: true)
@@ -440,6 +602,14 @@ class DefaultStorageOperation extends DataStorageOperation {
 
   @override
   Map<String, dynamic> toJson() => _$DefaultStorageOperationToJson(this);
+
+  @override
+  int get hashCode => value.hashCode;
+
+  @override
+  bool operator ==(Object other) {
+    return other is DefaultStorageOperation && other.value == value;
+  }
 }
 
 @JsonSerializable(explicitToJson: true)
@@ -454,6 +624,14 @@ class DynamicStorageOperation extends DataStorageOperation {
 
   @override
   Map<String, dynamic> toJson() => _$DynamicStorageOperationToJson(this);
+
+  @override
+  int get hashCode => Object.hash(operation, value);
+
+  @override
+  bool operator ==(Object other) {
+    return other is DynamicStorageOperation && other.value == value;
+  }
 }
 
 @JsonEnum(valueField: 'operationName')
@@ -481,10 +659,20 @@ class UpdateStorageOperation extends DataStorageOperation {
 
   @override
   Map<String, dynamic> toJson() => _$UpdateStorageOperationToJson(this);
+
+  @override
+  int get hashCode => value.hashCode;
+
+  @override
+  bool operator ==(Object other) {
+    return other is UpdateStorageOperation &&
+        MapEquality().equals(other.value, value);
+  }
 }
 
 @JsonSerializable()
 class SetNotifyMessage extends ClientMessage {
+  @JsonKey(includeToJson: true, includeFromJson: true)
   @override
   final String cmd = 'SetNotify';
   final List<String> keys;
@@ -496,4 +684,12 @@ class SetNotifyMessage extends ClientMessage {
 
   @override
   Map<String, dynamic> toJson() => _$SetNotifyMessageToJson(this);
+
+  @override
+  int get hashCode => keys.hashCode;
+
+  @override
+  bool operator ==(Object other) {
+    return other is SetNotifyMessage && ListEquality().equals(other.keys, keys);
+  }
 }
