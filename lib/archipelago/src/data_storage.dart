@@ -25,7 +25,7 @@ interface class ArchipelagoDataStorage {
     return _games[game]?.resolveLocationId(id);
   }
 
-  const ArchipelagoDataStorage(this._games);
+  ArchipelagoDataStorage(this._games);
 }
 
 interface class ArchipelagoGame {
