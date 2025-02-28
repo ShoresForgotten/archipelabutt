@@ -132,6 +132,7 @@ class ArchipelagoClient {
           ),
         ),
       );
+      storage.save();
     }
 
     connector.send(

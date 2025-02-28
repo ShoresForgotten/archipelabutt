@@ -25,6 +25,10 @@ interface class ArchipelagoDataStorage {
     return _games[game]?.resolveLocationId(id);
   }
 
+  void save() {
+    // Empty implementation, there's no way to store this nicely
+  }
+
   ArchipelagoDataStorage(this._games);
 }
 
