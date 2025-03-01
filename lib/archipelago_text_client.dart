@@ -1,23 +1,18 @@
-import 'package:collection/wrappers.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import 'archipelago/archipelago.dart';
-import 'state.dart';
 
 class ArchipelagoMessageLog extends StatelessWidget {
-  const ArchipelagoMessageLog({super.key});
+  final List<DisplayMessage> messages;
+  const ArchipelagoMessageLog({super.key, required this.messages});
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<MessageList>(
-      builder: (context, messages, child) {
-        return ListView.builder(
-          itemCount: messages.messages.length,
-          itemBuilder: (context, index) {
-            return ArchipelagoMessage(message: messages.messages[index]);
-          },
-        );
+    return ListView.builder(
+      itemCount: messages.length,
+      itemBuilder: (context, index) {
+        return ArchipelagoMessage(message: messages[index]);
       },
     );
   }

@@ -319,7 +319,7 @@ class BouncedMessage extends ServerMessage {
   final List<String>? games;
   final List<int>? slots;
   final List<String>? tags;
-  final Map<dynamic, dynamic> data;
+  final Map<dynamic, dynamic>? data;
 
   BouncedMessage(this.data, {this.games, this.slots, this.tags});
 

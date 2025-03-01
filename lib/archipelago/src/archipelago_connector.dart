@@ -5,7 +5,6 @@ import 'dart:convert';
 
 import 'client_to_server.dart';
 import 'server_to_client.dart';
-import 'package:stream_channel/stream_channel.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 /// A connection to an Archipelago server.
@@ -23,8 +22,9 @@ interface class ArchipelagoConnector {
       Uri(host: host, port: port, scheme: 'ws'),
     );
     final stream = channel.stream
-        .map((event) => jsonDecode(event) as List<ServerMessage>)
-        .expand((x) => x);
+        .map((event) => jsonDecode(event) as List<dynamic>)
+        .expand((x) => x)
+        .map((x) => ServerMessage.fromJson(x));
     final StreamSink sink = channel.sink;
     return ArchipelagoConnector._(channel, sink, stream);
   }

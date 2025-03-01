@@ -126,7 +126,7 @@ class Bounced extends ArchipelagoEvent {
   final List<String>? games;
   final List<Player>? players;
   final List<String>? tags;
-  final Map<dynamic, dynamic> data;
+  final Map<dynamic, dynamic>? data;
 
   Bounced({required this.data, this.games, this.players, this.tags});
 }

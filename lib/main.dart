@@ -1,7 +1,11 @@
 import 'package:archipelabutt/state.dart';
+import 'package:buttplug/buttplug.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+
+import 'archipelago/archipelago.dart';
+import 'archipelago_text_client.dart';
 
 void main() {
   runApp(const ArchipelabuttApp());
@@ -50,13 +54,13 @@ class AppPage {
 }
 
 const List<AppPage> pages = [
-  AppPage('Archipelago Log', Icon(Icons.chat_bubble), Placeholder()),
+  AppPage('Archipelago Log', Icon(Icons.chat_bubble), ArchipelagoLogArea()),
+  AppPage('Intensity Settings', Icon(Icons.settings), ButtplugControllerArea()),
   AppPage(
-    'Intensity Settings',
-    Icon(Icons.settings),
-    ButtplugControllerArea(),
+    'Archipelago Connection',
+    Icon(Icons.question_mark),
+    ArchipelagoConnectionSettingsArea(),
   ),
-  AppPage('Archipelago Connection', Icon(Icons.question_mark), Placeholder()),
   AppPage(
     'Buttplug Connection',
     Icon(Icons.question_mark),
@@ -149,15 +153,254 @@ class ButtplugConnectionSettingsArea extends StatelessWidget {
                 controller: TextEditingController(text: state.bpConn.host),
               ),
               TextField(
-                onChanged: (value) => state.bpConn.port = int.parse(value),
+                onChanged: (value) {
+                  final parsed = int.tryParse(value);
+                  if (parsed != null) {
+                    state.bpConn.port = parsed;
+                  }
+                },
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: InputDecoration(label: Text('Port')),
                 controller: TextEditingController(
                   text: state.bpConn.port.toString(),
                 ),
               ),
+              Row(
+                children: [
+                  FilledButton(
+                    onPressed: () => state.bpConn.connect(),
+                    child: Text('Connect'),
+                  ),
+                  FilledButton(
+                    onPressed: () => state.bpConn.client?.startScanning(),
+                    child: Text('Start scan'),
+                  ),
+                  FilledButton(
+                    onPressed: () => state.bpConn.client?.stopScanning(),
+                    child: Text('Stop scan'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class ButtplugControllerArea extends StatefulWidget {
+  const ButtplugControllerArea({super.key});
+
+  @override
+  State<ButtplugControllerArea> createState() => _ButtplugControllerAreaState();
+}
+
+class _ButtplugControllerAreaState extends State<ButtplugControllerArea> {
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<ArchipelabuttState>(
+      builder: (context, settings, child) {
+        return SizedBox(width: 500, child: ButtplugDeviceSelector());
+      },
+    );
+  }
+}
+
+class ButtplugDeviceSelector extends StatefulWidget {
+  const ButtplugDeviceSelector({super.key});
+
+  @override
+  State<StatefulWidget> createState() {
+    return _ButtplugDeviceSelectorState();
+  }
+}
+
+class _ButtplugDeviceSelectorState extends State<ButtplugDeviceSelector> {
+  ArchipelabuttDevice? currentDeviceControllerSelection;
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<ArchipelabuttState>(
+      builder: (context, value, child) {
+        value.updateBpDevices();
+        return Column(
+          children: [
+            Row(
+              children: [
+                DropdownMenu<ArchipelabuttDevice>(
+                  dropdownMenuEntries:
+                      value.bpDevices.devices.values
+                          .map(
+                            (x) => DropdownMenuEntry(
+                              value: x,
+                              label: x.controller.device.name,
+                            ),
+                          )
+                          .toList(),
+                  onSelected: (ArchipelabuttDevice? device) {
+                    setState(() {
+                      currentDeviceControllerSelection =
+                          value.bpDevices.devices[device!
+                              .controller
+                              .device
+                              .index];
+                    });
+                  },
+                ),
+                DropdownMenu<
+                  ArchipelabuttDeviceController Function(ButtplugClientDevice)
+                >(
+                  dropdownMenuEntries:
+                      ArchipelabuttDeviceController.options.keys
+                          .map(
+                            (k) => DropdownMenuEntry(
+                              value: ArchipelabuttDeviceController.options[k]!,
+                              label: k,
+                            ),
+                          )
+                          .toList(),
+                  initialSelection:
+                      ArchipelabuttDeviceController
+                          .options[currentDeviceControllerSelection
+                          ?.controller
+                          .cName],
+                  onSelected: (value) {
+                    if (value != null) {
+                      currentDeviceControllerSelection?.controller = value(
+                        currentDeviceControllerSelection!.controller.device,
+                      );
+                      setState(() {});
+                    }
+                  },
+                ),
+                DropdownMenu<ArchipelabuttCommandStrategy Function()>(
+                  dropdownMenuEntries:
+                      ArchipelabuttCommandStrategy.options.keys
+                          .map(
+                            (e) => DropdownMenuEntry(
+                              value: ArchipelabuttCommandStrategy.options[e]!,
+                              label: e,
+                            ),
+                          )
+                          .toList(),
+                  initialSelection:
+                      ArchipelabuttCommandStrategy
+                          .options[currentDeviceControllerSelection
+                          ?.strategy
+                          .strategyName],
+                  onSelected: (value) {
+                    if (value != null) {
+                      currentDeviceControllerSelection?.strategy = value();
+                      setState(() {});
+                    }
+                  },
+                ),
+              ],
+            ),
+            Divider(),
+            ButtplugControllerSettingsArea(
+              device: currentDeviceControllerSelection,
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class ButtplugControllerSettingsArea extends StatelessWidget {
+  final ArchipelabuttDevice? device;
+  const ButtplugControllerSettingsArea({super.key, required this.device});
+
+  @override
+  Widget build(BuildContext context) {
+    if (device == null) {
+      return Text('No device selected');
+    } else {
+      List<Widget> children = [];
+      device!.controller.settings
+          .map((e) => Placeholder())
+          .forEach((element) => children.add(element));
+      children.add(Divider());
+      device!.strategy.settings
+          .map((e) {
+            if (e is ArchipelabuttDoubleSetting) {
+              return TextField(
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(
+                    RegExp('^-?[0-9]*\.?[0-9]*'),
+                  ),
+                ],
+                controller: TextEditingController(text: e.value.toString()),
+                decoration: InputDecoration(label: Text(e.label)),
+                onChanged: (value) {
+                  final newValue = double.tryParse(value);
+                  if (newValue != null) {
+                    e.value = newValue;
+                  }
+                },
+              );
+            } else if (e is ArchipelabuttUserSetting<Player>) {
+              return TextField(
+                maxLength: 16,
+                controller: TextEditingController(text: e.value.name),
+                decoration: InputDecoration(label: Text(e.label)),
+                onChanged: (value) {
+                  e.value = Player(value);
+                },
+              );
+            }
+            return Placeholder();
+          })
+          .forEach((e) => children.add(e));
+
+      return Expanded(child: ListView(children: children));
+    }
+  }
+}
+
+class ArchipelagoConnectionSettingsArea extends StatelessWidget {
+  const ArchipelagoConnectionSettingsArea({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<ArchipelabuttState>(
+      builder: (context, state, child) {
+        return SizedBox(
+          width: 500,
+          child: Column(
+            children: [
+              TextField(
+                onChanged: (value) => state.apConn.host = value,
+                decoration: InputDecoration(label: Text('Host')),
+                controller: TextEditingController(text: state.apConn.host),
+              ),
+              TextField(
+                onChanged: (value) {
+                  final parsed = int.tryParse(value);
+                  if (parsed != null) {
+                    state.apConn.port = parsed;
+                  }
+                },
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: InputDecoration(label: Text('Port')),
+                controller: TextEditingController(
+                  text: state.apConn.port.toString(),
+                ),
+              ),
+              TextField(
+                onChanged: (value) => state.apConn.name = value,
+                decoration: InputDecoration(label: Text('Name')),
+                controller: TextEditingController(text: state.apConn.name),
+              ),
+              TextField(
+                onChanged: (value) => state.apConn.password = value,
+                decoration: InputDecoration(label: Text('Password')),
+                controller: TextEditingController(text: state.apConn.password),
+              ),
               FilledButton(
-                onPressed: () => state.bpConn.connect(),
+                onPressed: () => state.apConn.connect(),
                 child: Text('Connect'),
               ),
             ],
@@ -168,102 +411,17 @@ class ButtplugConnectionSettingsArea extends StatelessWidget {
   }
 }
 
-class ButtplugControllerArea extends StatelessWidget {
-  const ButtplugControllerArea({super.key});
+class ArchipelagoLogArea extends StatelessWidget {
+  const ArchipelagoLogArea({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Consumer<ArchipelabuttState>(
-      builder: (context, settings, child) {
-        return SizedBox(
-          width: 500,
-          child: Column(
-            children: [
-              MenuAnchor(menuChildren: settings.bpDevices.devices.map(convert))
-              RangeSlider(
-                labels: RangeLabels('Minimum Intensity', 'Maximum Intensity'),
-                values: RangeValues(
-                  settings.minIntensity,
-                  settings.maxIntensity,
-                ),
-                onChanged: (value) {
-                  settings.minIntensity = value.start;
-                  settings.maxIntensity = value.end;
-                },
-                min: 0,
-                max: 100,
-              ),
-              TextField(
-                onChanged:
-                    (value) =>
-                        settings.boringCheckValue = double.tryParse(value) ?? 0,
-                decoration: InputDecoration(label: Text('Boring')),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(
-                    RegExp(r'^-?[0-9]*\.?[0-9]*'),
-                  ),
-                ],
-              ),
-              TextField(
-                onChanged:
-                    (value) =>
-                        settings.logicalAdvancementCheckValue =
-                            double.tryParse(value) ?? 0,
-                decoration: InputDecoration(label: Text('Logical Advancement')),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(
-                    RegExp(r'^-?[0-9]*\.?[0-9]*'),
-                  ),
-                ],
-              ),
-              TextField(
-                onChanged:
-                    (value) =>
-                        settings.usefulCheckValue = double.tryParse(value) ?? 0,
-                decoration: InputDecoration(label: Text('Useful')),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(
-                    RegExp(r'^-?[0-9]*\.?[0-9]*'),
-                  ),
-                ],
-              ),
-              TextField(
-                onChanged:
-                    (value) =>
-                        settings.trapCheckValue = double.tryParse(value) ?? 0,
-                decoration: InputDecoration(label: Text('Trap')),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(
-                    RegExp(r'^-?[0-9]*\.?[0-9]*'),
-                  ),
-                ],
-              ),
-              TextField(
-                onChanged:
-                    (value) => settings.decayRate = double.tryParse(value) ?? 0,
-                decoration: InputDecoration(label: Text('Decay Rate')),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(
-                    RegExp(r'^-?[0-9]*\.?[0-9]*'),
-                  ),
-                ],
-              ),
-            ],
-          ),
+      builder: (BuildContext context, ArchipelabuttState value, Widget? child) {
+        return ArchipelagoMessageLog(
+          messages: value.apDisplayMessages.messages,
         );
       },
     );
   }
-}
-
-class ButtplugControllerSettingsArea extends StatelessWidget {
-  const ButtplugControllerSettingsArea({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Consumer<ArchipelabuttPointsController>(builder: (context, value, child) {
-      
-    },);
-  }
-
 }

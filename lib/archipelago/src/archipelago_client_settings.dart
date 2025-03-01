@@ -49,9 +49,9 @@ class ArchipelagoClientSettings {
   }) {
     if (game == null &&
         (tags == null ||
-            !tags.contains('HintGame') ||
-            !tags.contains('Tracker') ||
-            !tags.contains('TextOnly'))) {
+            (!tags.contains('HintGame') &&
+                !tags.contains('Tracker') &&
+                !tags.contains('TextOnly')))) {
       throw Error();
     }
     if ((receiveOwnWorld || receiveStartingInventory) && !receiveOtherWorlds) {

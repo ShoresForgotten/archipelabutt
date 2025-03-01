@@ -1,6 +1,10 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:developer';
+import 'dart:io';
+import 'dart:math' show min, max;
 
+import 'package:archipelabutt/archipelago_text_client.dart';
 import 'package:buttplug/buttplug.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
@@ -10,8 +14,7 @@ import 'archipelago/archipelago.dart';
 class ArchipelabuttState extends ChangeNotifier {
   final ArchipelagoConnection apConn;
   final ButtplugConnection bpConn = ButtplugConnection();
-  final ArchipelagoDisplayMessageLog apDisplayMessages =
-      ArchipelagoDisplayMessageLog();
+  final MessageList apDisplayMessages = MessageList([]);
   StreamSubscription<ArchipelagoEvent>? _apStreamSub;
   Stream<ArchipelagoEvent> get apStream => apConn.stream;
   StreamSubscription<ButtplugClientEvent>? _bpStreamSub;
@@ -25,8 +28,11 @@ class ArchipelabuttState extends ChangeNotifier {
           notifyListeners();
         case DisplayMessage():
           apDisplayMessages.addMessage(event);
+          // TODO: not this
+          notifyListeners();
         default:
       }
+      bpDevices.handleEvent(event);
     });
   }
 
@@ -37,15 +43,28 @@ class ArchipelabuttState extends ChangeNotifier {
 
   Future<void> bpConnect() async {
     await bpConn.connect();
-    _bpStreamSub = bpConn.client!.eventStream.listen((event) {
+    _bpStreamSub = bpConn.client?.eventStream.listen((event) {
       switch (event) {
         case DeviceAddedEvent():
-          bpDevices.addDevice(event);
+          bpDevices.addDevice(event.device);
         case DeviceRemovedEvent():
-          bpDevices.removeDevice(event);
+          bpDevices.removeDevice(event.device);
+      }
+      notifyListeners();
+    });
+    bpConn.client?.devices.forEach((key, value) => bpDevices.addDevice(value));
+    notifyListeners();
+  }
+
+  void updateBpDevices() {
+    bpConn.client?.devices.forEach((key, value) {
+      if (!bpDevices.devices.keys.contains(key)) {
+        bpDevices.addDevice(value);
       }
     });
-    notifyListeners();
+    bpDevices.devices.removeWhere((k, _) {
+      return bpConn.client == null || !(bpConn.client!.devices.containsKey(k));
+    });
   }
 }
 
@@ -64,9 +83,14 @@ class ButtplugConnection {
         ButtplugWebsocketClientConnector(uri.toString());
     final ButtplugClient client = ButtplugClient('Archipelabutt');
     log('Connecting to Buttplug server on $uri', level: Level.INFO.value);
-    await client.connect(connector);
-    log('Connected to Buttplug server', level: Level.INFO.value);
-    this.client = client;
+    try {
+      await client.connect(connector);
+      log('Connected to Buttplug server', level: Level.INFO.value);
+      this.client = client;
+    } on SocketException catch (e) {
+      log('Connection failed.', error: e, level: Level.INFO.value);
+      rethrow;
+    }
   }
 }
 
@@ -80,12 +104,14 @@ class ArchipelagoConnection {
   int port;
   String name;
   String uuid;
+  String password;
 
   ArchipelagoConnection(
     this.uuid, [
     this.host = '',
-    this.port = 0,
+    this.port = 38281,
     this.name = '',
+    this.password = '',
   ]);
 
   Future<void> connect() async {
@@ -98,6 +124,7 @@ class ArchipelagoConnection {
       port: port,
       name: name,
       uuid: uuid,
+      password: password,
       tags: ['TextOnly', 'Buttplug'],
       receiveOtherWorlds: false,
       receiveOwnWorld: false,
@@ -110,238 +137,372 @@ class ArchipelagoConnection {
   }
 }
 
-abstract interface class ArchipelabuttDeviceController {
-  ButtplugClientDevice get device;
+interface class ArchipelabuttDevice {
+  ArchipelabuttDeviceController controller;
+  ArchipelabuttCommandStrategy strategy;
+
+  void handleEvent(ArchipelagoEvent event) {
+    final command = strategy.handleEvent(event);
+    if (command != null) {
+      controller.sendCommand(command);
+    }
+  }
+
+  ArchipelabuttDevice(this.controller, this.strategy);
 }
 
-class EmptyController implements ArchipelabuttDeviceController {
+class ArchipelabuttDeviceController {
+  static Map<
+    String,
+    ArchipelabuttDeviceController Function(ButtplugClientDevice)
+  >
+  options = {
+    ArchipelabuttDeviceController.controllerName:
+        ArchipelabuttDeviceController.new,
+    DemoController.controllerName: DemoController.new,
+  };
+
+  static final String controllerName = 'Default';
+  String get cName => controllerName;
   final ButtplugClientDevice device;
-  EmptyController(this.device);
-}
+  ArchipelabuttDeviceController(this.device);
 
-abstract interface class ArchipelabuttDeviceSetting {}
+  List<ArchipelabuttUserSetting> get settings => [];
 
-class ArchipelabuttPointsController implements ArchipelabuttDeviceController {
-  late final StreamSubscription<ArchipelagoEvent> _sub;
-  final ArchipelabuttScalarDevice _device;
-  ButtplugClientDevice get device => _device.device;
-  final ArchipelabuttPointsSystem _pointsSystem;
-  double currentLevel;
-
-  ArchipelabuttPointsController(
-    Stream<ArchipelagoEvent> stream,
-    this._device,
-    this._pointsSystem, [
-    this.currentLevel = 0,
-  ]) {
-    _sub = stream.listen((event) {
-      final level = _pointsSystem
-          .pointsChange(event, currentLevel)
-          .clamp(0.0, 1.0);
-      if (level != currentLevel) {
-        currentLevel = level;
-        _device.setLevel(level);
+  void sendCommand(ArchipelabuttDeviceCommand command) {
+    try {
+      switch (command) {
+        case ArchipelabuttVibrateCommand():
+          device.vibrate(
+            ButtplugDeviceCommand.setAll(VibrateComponent(command.speed)),
+          );
+          break;
+        case ArchipelabuttScalarCommand():
+          device.scalar(
+            ButtplugDeviceCommand.setAll(
+              ScalarComponent(command.scalar, command.actuatorType),
+            ),
+          );
+          break;
+        case ArchipelabuttRotateCommand():
+          device.rotate(
+            ButtplugDeviceCommand.setAll(
+              RotateComponent(command.speed, command.clockwise),
+            ),
+          );
+        case ArchipelabuttLinearCommand():
+          device.linear(
+            ButtplugDeviceCommand.setAll(
+              LinearComponent(command.position, command.duration),
+            ),
+          );
       }
-    });
-  }
-
-  void dispose() {
-    _sub.cancel();
-  }
-}
-
-abstract interface class ArchipelabuttPointsSystem {
-  double pointsChange(ArchipelagoEvent event, [double currentLevel]);
-}
-
-class CheckPointsSystem implements ArchipelabuttPointsSystem {
-  double basePointsValue;
-  double logicalAdvancementModifier;
-  double usefulModifier;
-  double trapModifier;
-  Player trackedPlayer;
-
-  CheckPointsSystem(
-    this.basePointsValue,
-    this.logicalAdvancementModifier,
-    this.usefulModifier,
-    this.trapModifier,
-    this.trackedPlayer,
-  );
-
-  @override
-  double pointsChange(ArchipelagoEvent event, [double currentLevel = 0]) {
-    if (event is DisplayMessage &&
-        event is ItemSend &&
-        event.item.player.id == trackedPlayer.id) {
-      var sum = currentLevel + basePointsValue;
-      if (event.item.item.logicalAdvancement) sum += logicalAdvancementModifier;
-      if (event.item.item.useful) sum += usefulModifier;
-      if (event.item.item.trap) sum += trapModifier;
-      return sum;
-    } else {
-      return currentLevel;
+    } catch (e) {
+      log(e.toString(), level: Level.WARNING.value);
     }
   }
 }
 
-abstract interface class ArchipelabuttScalarDevice {
-  ButtplugClientDevice get device;
-  setLevel(double scalar);
-  void stop();
-}
+/// HACK CLASS PURELY FOR DEMO PURPOSES
+class DemoController implements ArchipelabuttDeviceController {
+  static final String controllerName = 'Demo';
+  @override
+  String get cName => controllerName;
 
-class LinearToScalarWrapper implements ArchipelabuttScalarDevice {
-  int _currentPeriod;
-  final int _minPeriod;
-  final int _maxPeriod;
-  final ButtplugClientDevice _device;
-  ButtplugClientDevice get device => _device;
+  final ButtplugClientDevice device;
 
-  LinearToScalarWrapper(
-    this._minPeriod,
-    this._maxPeriod,
-    this._device,
-    this._currentPeriod,
-  );
+  DemoController(this.device);
 
   @override
-  setLevel(double period) {
-    _currentPeriod = ((_maxPeriod - _minPeriod) * period + _minPeriod).floor();
-    _device.linear(
+  void sendCommand(ArchipelabuttDeviceCommand command) {
+    try {
+      switch (command) {
+        case ArchipelabuttVibrateCommand():
+          device.scalar(
+            ButtplugDeviceCommand.setAll(
+              ScalarComponent(1.0, ActuatorType.Oscillate),
+            ),
+          );
+          break;
+        case ArchipelabuttScalarCommand():
+          device.scalar(
+            ButtplugDeviceCommand.setAll(
+              ScalarComponent(command.scalar, command.actuatorType),
+            ),
+          );
+          break;
+        case ArchipelabuttRotateCommand():
+          device.rotate(
+            ButtplugDeviceCommand.setAll(
+              RotateComponent(command.speed, command.clockwise),
+            ),
+          );
+        case ArchipelabuttLinearCommand():
+          device.linear(
+            ButtplugDeviceCommand.setAll(
+              LinearComponent(command.position, command.duration),
+            ),
+          );
+      }
+    } catch (e) {
+      log(e.toString(), level: Level.WARNING.value);
+    }
+  }
+
+  // HACK TEST
+  void bingusTest(double pos, int duration) {
+    device.scalar(
+      ButtplugDeviceCommand.setAll(
+        ScalarComponent(pos, ActuatorType.Oscillate),
+      ),
+    );
+  }
+
+  void bingusTwo(double pos1, double pos2, int duration) {
+    device.linear(
       ButtplugDeviceCommand.setVec([
-        LinearComponent(0.0, _currentPeriod),
-        LinearComponent(1.0, _currentPeriod),
+        LinearComponent(pos1, duration),
+        LinearComponent(pos2, duration),
       ]),
     );
   }
 
   @override
-  void stop() {
-    _device.linear(
-      ButtplugDeviceCommand.setAll(LinearComponent(0.0, _currentPeriod)),
+  List<ArchipelabuttUserSetting> get settings => [];
+}
+
+sealed class ArchipelabuttDeviceCommand {}
+
+class ArchipelabuttVibrateCommand extends ArchipelabuttDeviceCommand {
+  final double speed;
+  ArchipelabuttVibrateCommand(this.speed);
+}
+
+class ArchipelabuttScalarCommand extends ArchipelabuttDeviceCommand {
+  final double scalar;
+  final ActuatorType actuatorType;
+
+  ArchipelabuttScalarCommand(this.scalar, this.actuatorType);
+}
+
+class ArchipelabuttRotateCommand extends ArchipelabuttDeviceCommand {
+  final double speed;
+  final bool clockwise;
+
+  ArchipelabuttRotateCommand(this.speed, this.clockwise);
+}
+
+class ArchipelabuttLinearCommand extends ArchipelabuttDeviceCommand {
+  final int duration;
+  final double position;
+
+  ArchipelabuttLinearCommand(this.duration, this.position);
+}
+
+abstract interface class ArchipelabuttCommandStrategy {
+  ArchipelabuttDeviceCommand? handleEvent(ArchipelagoEvent event);
+  abstract String strategyName;
+  List<ArchipelabuttUserSetting> get settings;
+
+  static Map<String, ArchipelabuttCommandStrategy Function()> options = {
+    'Empty': EmptyStrategy.new,
+    'Points': ArchipelabuttPointsStrategy.new,
+  };
+}
+
+class EmptyStrategy implements ArchipelabuttCommandStrategy {
+  EmptyStrategy();
+  @override
+  String strategyName = 'Empty';
+
+  @override
+  ArchipelabuttDeviceCommand? handleEvent(_) {
+    return null;
+  }
+
+  @override
+  List<ArchipelabuttUserSetting> get settings => [];
+}
+
+class ArchipelabuttPointsStrategy implements ArchipelabuttCommandStrategy {
+  final ArchipelabuttPointsSystem _pointsSystem;
+  final ArchipelabuttDoubleSetting level;
+  @override
+  String strategyName = 'Points';
+
+  ArchipelabuttPointsStrategy([
+    ArchipelabuttPointsSystem? pointsSystem,
+    double startValue = 0,
+    double? minValue,
+    double? maxValue,
+  ]) : level = ArchipelabuttDoubleSetting(
+         startValue,
+         'Current Level',
+         minValue,
+         maxValue,
+       ),
+       _pointsSystem = pointsSystem ?? CheckPointsSystem();
+
+  @override
+  ArchipelabuttDeviceCommand handleEvent(ArchipelagoEvent event) {
+    level.value = _pointsSystem.pointsChange(event, level.value).clamp(0, 1);
+    return ArchipelabuttVibrateCommand(level.value);
+  }
+
+  @override
+  List<ArchipelabuttUserSetting> get settings {
+    final List<ArchipelabuttUserSetting<dynamic>> ret = [level];
+    for (var e in _pointsSystem.settings) {
+      ret.add(e);
+    }
+    return ret;
+  }
+}
+
+abstract interface class ArchipelabuttPointsSystem {
+  List<ArchipelabuttUserSetting> get settings;
+  double pointsChange(ArchipelagoEvent event, [double currentLevel]);
+}
+
+class CheckPointsSystem implements ArchipelabuttPointsSystem {
+  ArchipelabuttDoubleSetting basePointsValue;
+  ArchipelabuttDoubleSetting logicalAdvancementModifier;
+  ArchipelabuttDoubleSetting usefulModifier;
+  ArchipelabuttDoubleSetting trapModifier;
+  ArchipelabuttUserSetting<Player> trackedPlayer;
+
+  CheckPointsSystem([
+    double? basePointsValue,
+    double? logicalAdvancementModifier,
+    double? usefulModifier,
+    double? trapModifier,
+    Player? trackedPlayer,
+  ]) : basePointsValue = ArchipelabuttDoubleSetting(
+         basePointsValue ?? 0,
+         'Base value',
+       ),
+       logicalAdvancementModifier = ArchipelabuttDoubleSetting(
+         logicalAdvancementModifier ?? 0,
+         'Logical advancement modifier',
+       ),
+       usefulModifier = ArchipelabuttDoubleSetting(
+         usefulModifier ?? 0,
+         'Useful modifier',
+       ),
+       trapModifier = ArchipelabuttDoubleSetting(
+         trapModifier ?? 0,
+         'Trap modifier',
+       ),
+       trackedPlayer = ArchipelabuttUserSetting<Player>(
+         Player('Placeholder'),
+         'Tracked Player',
+       );
+
+  @override
+  double pointsChange(ArchipelagoEvent event, [double currentLevel = 0]) {
+    if (event is DisplayMessage &&
+        event is ItemSend &&
+        event.item.player.name == trackedPlayer.value.name) {
+      var sum = currentLevel + basePointsValue.value;
+      if (event.item.item.logicalAdvancement)
+        sum += logicalAdvancementModifier.value;
+      if (event.item.item.useful) sum += usefulModifier.value;
+      if (event.item.item.trap) sum += trapModifier.value;
+      return sum;
+    } else {
+      return currentLevel;
+    }
+  }
+
+  @override
+  List<ArchipelabuttUserSetting> get settings => [
+    basePointsValue,
+    logicalAdvancementModifier,
+    usefulModifier,
+    trapModifier,
+    trackedPlayer,
+  ];
+}
+
+interface class ArchipelabuttUserSetting<T> {
+  final String label;
+  T _value;
+  T get value => _value;
+  set value(T val) => _value = val;
+
+  ArchipelabuttUserSetting(this._value, this.label);
+}
+
+class ArchipelabuttDoubleSetting implements ArchipelabuttUserSetting<double> {
+  @override
+  final String label;
+  @override
+  double _value;
+  final double? _maxValue;
+  final double? _minValue;
+  @override
+  double get value => _value;
+  @override
+  set value(double val) {
+    if (_minValue != null && _maxValue != null) {
+      _value = val.clamp(_minValue, _maxValue);
+    } else if (_minValue != null) {
+      _value = max(val, _minValue);
+    } else if (_maxValue != null) {
+      _value = min(val, _maxValue);
+    } else {
+      _value = val;
+    }
+  }
+
+  ArchipelabuttDoubleSetting(
+    this._value,
+    this.label, [
+    this._minValue,
+    this._maxValue,
+  ]);
+}
+
+class ArchipelabuttListSetting<T> implements ArchipelabuttUserSetting<T> {
+  @override
+  final String label;
+  final List<T> _possibleValues;
+  List<T> get possibleValues => UnmodifiableListView(_possibleValues);
+  @override
+  T _value;
+  @override
+  T get value => _value;
+  set value(T val) {
+    if (!_possibleValues.contains(val) || val != null) {
+      throw Error();
+    } else {
+      _value = val;
+    }
+  }
+
+  List<T> get settings => UnmodifiableListView(_possibleValues);
+
+  ArchipelabuttListSetting(this._possibleValues, this._value, this.label);
+}
+
+class ButtplugDevices {
+  Map<int, ArchipelabuttDevice> _devices = {};
+  Map<int, ArchipelabuttDevice> get devices => _devices;
+
+  void addDevice(ButtplugClientDevice device) {
+    _devices[device.index] = ArchipelabuttDevice(
+      ArchipelabuttDeviceController(device),
+      EmptyStrategy(),
     );
   }
-}
 
-class ArchipelabuttVibrate implements ArchipelabuttScalarDevice {
-  double _currentLevel;
-  final ButtplugClientDevice _device;
-  ArchipelabuttVibrate(this._device, this._currentLevel);
-
-  @override
-  setLevel(double speed) {
-    _currentLevel = speed;
-    _device.vibrate(ButtplugDeviceCommand.setAll(VibrateComponent(speed)));
+  void removeDevice(ButtplugClientDevice device) {
+    _devices.remove(device.index);
   }
 
-  @override
-  void stop() {
-    _device.vibrate(ButtplugDeviceCommand.setAll(VibrateComponent(0)));
-  }
-}
-
-class ArchipelagoDisplayMessageLog extends ChangeNotifier {
-  final List<DisplayMessage> messages = [];
-
-  void addMessage(DisplayMessage message) {
-    messages.add(message);
-    notifyListeners();
-  }
-}
-
-class ArchipelabuttIntensitySettings extends ChangeNotifier {
-  double _minIntensity = 0;
-  set minIntensity(double val) {
-    if (val > 100) {
-      _minIntensity = 100;
-    } else if (val < 0) {
-      _minIntensity = 0;
-    } else {
-      _minIntensity = val;
-    }
-    notifyListeners();
-  }
-
-  double get minIntensity => _minIntensity;
-
-  double _maxIntensity = 100;
-  set maxIntensity(double val) {
-    if (val > 100) {
-      _maxIntensity = 100;
-    } else if (val < 0) {
-      _maxIntensity = 0;
-    } else {
-      _maxIntensity = val;
-    }
-    notifyListeners();
-  }
-
-  double get maxIntensity => _maxIntensity;
-
-  double _boringCheckValue = 0;
-  set boringCheckValue(double val) {
-    _boringCheckValue = val;
-    notifyListeners();
-  }
-
-  double get boringCheckValue => _boringCheckValue;
-
-  double _logicalAdvancementCheckValue = 0;
-  set logicalAdvancementCheckValue(double val) {
-    _logicalAdvancementCheckValue = val;
-    notifyListeners();
-  }
-
-  double get logicalAdvancementCheckValue => _logicalAdvancementCheckValue;
-
-  double _usefulCheckValue = 0;
-  set usefulCheckValue(double val) {
-    _usefulCheckValue = val;
-    notifyListeners();
-  }
-
-  double get usefulCheckValue => _usefulCheckValue;
-
-  double _trapCheckValue = 0;
-  set trapCheckValue(double val) {
-    _trapCheckValue = val;
-    notifyListeners();
-  }
-
-  double get trapCheckValue => _trapCheckValue;
-
-  double _decayRate = 0;
-  set decayRate(double val) {
-    _decayRate = val;
-    notifyListeners();
-  }
-
-  double get decayRate => _decayRate;
-}
-
-class ButtplugDevices extends ChangeNotifier {
-  Map<int, ButtplugClientDevice> devices = {};
-  Map<int, ArchipelabuttDeviceController> deviceControllers = {};
-
-  void addDevice(DeviceAddedEvent event) {
-    devices[event.device.index] = event.device;
-    notifyListeners();
-  }
-
-  void removeDevice(DeviceRemovedEvent event) {
-    devices.remove(event.device.index);
-    deviceControllers.remove(event.device.index);
-    notifyListeners();
-  }
-
-  void addController(ArchipelabuttDeviceController controller, int index) {
-    if (devices.containsKey(index)) {
-      deviceControllers[index] = controller;
-    }
-  }
-
-  void removeController(int index) {
-    deviceControllers.remove(index);
+  void handleEvent(ArchipelagoEvent event) {
+    _devices.forEach((key, value) {
+      value.handleEvent(event);
+    });
   }
 }

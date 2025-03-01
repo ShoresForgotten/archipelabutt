@@ -20,8 +20,12 @@ class ArchipelagoClient {
   final ArchipelagoClientSettings _clientSettings;
   final ArchipelagoDataStorage _storage;
   final ArchipelagoRoomInfo _roomInfo;
-  final Stream<ServerMessage> _stream;
-  Stream<ArchipelagoEvent> get stream => _stream.map((e) => _convert(e));
+  final StreamController<ServerMessage> _streamController;
+  Stream<ArchipelagoEvent> get stream =>
+      _streamController.stream
+          .map((e) => _convert(e))
+          .where((e) => e != null)
+          .cast();
 
   Permission get releasePermission => _roomInfo.releasePermission;
   Permission get collectPermission => _roomInfo.collectPermission;
@@ -40,7 +44,7 @@ class ArchipelagoClient {
     this._clientSettings,
     this._roomInfo,
     this._storage,
-    this._stream,
+    this._streamController,
   );
 
   static Future<ArchipelagoClient> connect({
@@ -92,14 +96,18 @@ class ArchipelagoClient {
     ArchipelagoClientSettings clientSettings,
     ArchipelagoDataStorage storage,
   ) async {
-    final stream = connector.stream;
+    final StreamController<ServerMessage> controller = StreamController();
+    final _MessageQueue<ServerMessage> handshakeQueue = _MessageQueue();
+    bool doQueue = true;
 
-    final queue = _MessageQueue<ServerMessage>();
-    final queueStreamController = stream.listen(
-      (event) => queue.addMessage(event),
-    );
+    connector.stream.listen((event) {
+      if (doQueue) {
+        handshakeQueue.addMessage(event);
+      }
+      controller.add(event);
+    });
 
-    final ServerMessage roomInfoMessage = await queue.getMessage();
+    final ServerMessage roomInfoMessage = await handshakeQueue.getMessage();
     if (roomInfoMessage is! RoomInfoMessage) {
       throw HandshakeException('RoomInfo', roomInfoMessage);
     }
@@ -118,7 +126,7 @@ class ArchipelagoClient {
             .toList();
     if (gamesToGet.isNotEmpty) {
       connector.send(GetDataPackageMessage(gamesToGet));
-      final ServerMessage dataPackage = await queue.getMessage();
+      final ServerMessage dataPackage = await handshakeQueue.getMessage();
       if (dataPackage is! DataPackageMessage) {
         throw HandshakeException('DataPackage', dataPackage);
       }
@@ -150,9 +158,9 @@ class ArchipelagoClient {
       ),
     );
 
-    final ServerMessage connected = await queue.getMessage();
+    final ServerMessage connected = await handshakeQueue.getMessage();
     // Stop sending messages to the queue, we've either succeeded or failed by now.
-    queueStreamController.cancel();
+    doQueue = false;
 
     if (connected is ConnectionRefusedMessage) {
       throw ArchipelagoConnectionRefused(connected.errors);
@@ -184,11 +192,11 @@ class ArchipelagoClient {
       clientSettings,
       roomInfo,
       storage,
-      stream,
+      controller,
     );
   }
 
-  ArchipelagoEvent _convert(ServerMessage message) {
+  ArchipelagoEvent? _convert(ServerMessage message) {
     switch (message) {
       case ReceivedItemsMessage():
         final List<SentItem> items =
@@ -266,7 +274,7 @@ class ArchipelagoClient {
           message.slot,
         );
       default:
-        throw UnimplementedError();
+        return null;
     }
   }
 
@@ -435,9 +443,9 @@ class ArchipelagoClient {
       case null:
         return DisplayMessage(parts);
       case PrintJSONType.itemsend:
-        return ItemCheat(parts, receivingPlayer!, sentItem!);
-      case PrintJSONType.itemcheat:
         return ItemSend(parts, receivingPlayer!, sentItem!);
+      case PrintJSONType.itemcheat:
+        return ItemCheat(parts, receivingPlayer!, sentItem!);
       case PrintJSONType.hint:
         final bool found = message.found!;
         return HintMessage(parts, receivingPlayer!, sentItem!, found);
@@ -500,9 +508,9 @@ class ArchipelagoClient {
       _roomInfo.team,
     );
     if (isForLocationInfo) {
-      location = _resolveLocation(item.location, _roomInfo.slot);
+      location = _resolveLocation(_roomInfo.slot, item.location);
     } else {
-      location = _resolveLocation(item.location, item.player);
+      location = _resolveLocation(item.player, item.location);
     }
     return SentItem(location, _resolveItem(item, isForLocationInfo), player);
   }

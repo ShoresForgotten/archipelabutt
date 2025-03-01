@@ -1,7 +1,5 @@
 library;
 
-import 'dart:collection';
-
 import 'package:collection/collection.dart';
 
 interface class ArchipelagoDataStorage {

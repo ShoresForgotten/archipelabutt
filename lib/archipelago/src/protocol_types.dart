@@ -210,9 +210,6 @@ class TextJSONMessagePart extends JSONMessagePart {
   Map<String, dynamic> toJson() => _$TextJSONMessagePartToJson(this);
 
   @override
-  int get hashCode => super.hashCode;
-
-  @override
   bool operator ==(Object other) {
     return other is TextJSONMessagePart && other.text == text;
   }
@@ -232,9 +229,6 @@ class PlayerIDJSONMessagePart extends JSONMessagePart {
   Map<String, dynamic> toJson() => _$PlayerIDJSONMessagePartToJson(this);
 
   @override
-  int get hashCode => super.hashCode;
-
-  @override
   bool operator ==(Object other) {
     return other is PlayerIDJSONMessagePart && other.text == text;
   }
@@ -252,9 +246,6 @@ class PlayerNameJSONMessagePart extends JSONMessagePart {
 
   @override
   Map<String, dynamic> toJson() => _$PlayerNameJSONMessagePartToJson(this);
-
-  @override
-  int get hashCode => super.hashCode;
 
   @override
   bool operator ==(Object other) {
@@ -378,9 +369,6 @@ class EntranceNameJSONMessagePart extends JSONMessagePart {
 
   @override
   Map<String, dynamic> toJson() => _$EntranceNameJSONMessagePartToJson(this);
-
-  @override
-  int get hashCode => super.hashCode;
 
   @override
   bool operator ==(Object other) {
@@ -564,7 +552,7 @@ class NetworkSlot {
   final String name;
   final String game;
   final SlotType type;
-  final List<int> groupMembers;
+  final List<int>? groupMembers;
 
   const NetworkSlot(this.name, this.game, this.type, this.groupMembers);
 
