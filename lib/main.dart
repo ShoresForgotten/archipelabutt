@@ -54,7 +54,7 @@ const List<AppPage> pages = [
   AppPage(
     'Intensity Settings',
     Icon(Icons.settings),
-    ButtplugIntensitySettingsArea(),
+    ButtplugControllerArea(),
   ),
   AppPage('Archipelago Connection', Icon(Icons.question_mark), Placeholder()),
   AppPage(
@@ -65,8 +65,6 @@ const List<AppPage> pages = [
 ];
 
 class _HomePageState extends State<HomePage> {
-  final ButtplugConnection _bpConn = ButtplugConnection();
-  final ArchipelagoConnection _apConn = ArchipelagoConnection();
   int screenIndex = 0;
 
   @override
@@ -109,12 +107,7 @@ class _HomePageState extends State<HomePage> {
         alignment: Alignment.center,
         child: MultiProvider(
           providers: [
-            ChangeNotifierProvider<ButtplugConnection>(
-              create: (_) => ButtplugConnection(),
-            ),
-            ChangeNotifierProvider<ButtplugIntensitySettings>(
-              create: (_) => ButtplugIntensitySettings(),
-            ),
+            ChangeNotifierProvider(create: (_) => ArchipelabuttState('bingus')),
           ],
           child: pages[screenIndex].body,
         ),
@@ -133,7 +126,7 @@ class ButtplugSettingsPage extends StatelessWidget {
         if (!connection.connected) {
           return ButtplugConnectionSettingsArea();
         }
-        return ButtplugIntensitySettingsArea();
+        return ButtplugControllerArea();
       },
     );
   }
@@ -144,27 +137,27 @@ class ButtplugConnectionSettingsArea extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ButtplugConnection>(
-      builder: (context, connection, child) {
+    return Consumer<ArchipelabuttState>(
+      builder: (context, state, child) {
         return SizedBox(
           width: 500,
           child: Column(
             children: [
               TextField(
-                onChanged: (value) => connection.host = value,
+                onChanged: (value) => state.bpConn.host = value,
                 decoration: InputDecoration(label: Text('Host')),
-                controller: TextEditingController(text: connection.host),
+                controller: TextEditingController(text: state.bpConn.host),
               ),
               TextField(
-                onChanged: (value) => connection.port = int.parse(value),
+                onChanged: (value) => state.bpConn.port = int.parse(value),
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: InputDecoration(label: Text('Port')),
                 controller: TextEditingController(
-                  text: connection.port.toString(),
+                  text: state.bpConn.port.toString(),
                 ),
               ),
               FilledButton(
-                onPressed: () => connection.connect(),
+                onPressed: () => state.bpConn.connect(),
                 child: Text('Connect'),
               ),
             ],
@@ -175,17 +168,18 @@ class ButtplugConnectionSettingsArea extends StatelessWidget {
   }
 }
 
-class ButtplugIntensitySettingsArea extends StatelessWidget {
-  const ButtplugIntensitySettingsArea({super.key});
+class ButtplugControllerArea extends StatelessWidget {
+  const ButtplugControllerArea({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ButtplugIntensitySettings>(
+    return Consumer<ArchipelabuttState>(
       builder: (context, settings, child) {
         return SizedBox(
           width: 500,
           child: Column(
             children: [
+              MenuAnchor(menuChildren: settings.bpDevices.devices.map(convert))
               RangeSlider(
                 labels: RangeLabels('Minimum Intensity', 'Maximum Intensity'),
                 values: RangeValues(
@@ -260,4 +254,16 @@ class ButtplugIntensitySettingsArea extends StatelessWidget {
       },
     );
   }
+}
+
+class ButtplugControllerSettingsArea extends StatelessWidget {
+  const ButtplugControllerSettingsArea({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<ArchipelabuttPointsController>(builder: (context, value, child) {
+      
+    },);
+  }
+
 }

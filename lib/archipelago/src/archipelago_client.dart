@@ -191,16 +191,15 @@ class ArchipelagoClient {
   ArchipelagoEvent _convert(ServerMessage message) {
     switch (message) {
       case ReceivedItemsMessage():
-        final List<ItemLocation> items =
+        final List<SentItem> items =
             message.items.map((e) {
               // TODO: Improve null checking
-              final foundGame = _roomInfo.getSlotGame(e.player);
-              final itemName = _storage.resolveItemId(foundGame!, e.item);
-              final locationName = _storage.resolveLocationId(
-                foundGame,
-                e.location,
-              );
-              return ItemLocation(
+              final player = _roomInfo.resolvePlayer(e.player, _roomInfo.team);
+              final slotInfo = _roomInfo.resolveSlot(e.player);
+              final game = slotInfo?.name;
+              final itemName = _storage.resolveItemId(game!, e.item);
+              final locationName = _storage.resolveLocationId(game, e.location);
+              return SentItem(
                 Location(locationName!, e.location),
                 Item(
                   itemName!,
@@ -209,19 +208,21 @@ class ArchipelagoClient {
                   e.flags.useful,
                   e.flags.trap,
                 ),
+                Player(player!.alias, player.slot),
               );
             }).toList();
         return ItemsReceived(items, message.index);
       case LocationInfoMessage():
-        final List<ItemLocation> scouts =
+        final List<SentItem> scouts =
             message.locations.map((e) {
-              final targetGame = _roomInfo.getSlotGame(e.player);
-              final itemName = _storage.resolveItemId(targetGame!, e.item);
+              final slotInfo = _roomInfo.resolveSlot(e.player);
+              final player = _roomInfo.resolvePlayer(e.player, _roomInfo.team);
+              final itemName = _storage.resolveItemId(slotInfo!.game, e.item);
               final locationName = _storage.resolveLocationId(
-                targetGame,
+                slotInfo.game,
                 e.location,
               );
-              return ItemLocation(
+              return SentItem(
                 Location(locationName!, e.location),
                 Item(
                   itemName!,
@@ -230,21 +231,25 @@ class ArchipelagoClient {
                   e.flags.useful,
                   e.flags.trap,
                 ),
+                Player(player!.alias, e.player),
               );
             }).toList();
         return LocationsScouted(scouts);
       case RoomUpdateMessage():
         return RoomUpdate(message);
       case PrintJSONMessage():
-        return DisplayMessage(
-          message.data.map((e) => _convertJSONMessagePart(e)).toList(),
-        );
+        return _jsonMessageToDisplayMessage(message);
       case BouncedMessage():
         return Bounced(
           games: message.games,
           players:
               message.slots
-                  ?.map((e) => Player(_roomInfo.getSlotAlias(e)!, e))
+                  ?.map(
+                    (e) => Player(
+                      _roomInfo.resolvePlayer(e, _roomInfo.team)!.alias,
+                      e,
+                    ),
+                  )
                   .toList(),
           tags: message.tags,
           data: message.data,
@@ -271,15 +276,17 @@ class ArchipelagoClient {
         return TextMessagePart(part.text);
       case PlayerIDJSONMessagePart():
         final id = int.parse(part.text);
-        return PlayerMessagePart(Player(_roomInfo.getSlotAlias(id)!, id));
+        return PlayerMessagePart(
+          Player(_roomInfo.resolvePlayer(id, _roomInfo.team)!.alias, id),
+        );
       case PlayerNameJSONMessagePart():
         return PlayerMessagePart(Player(part.text));
       case ItemIDJSONMessagePart():
-        final game = _roomInfo.getSlotGame(part.player);
+        final game = _roomInfo.resolveSlot(part.player)!.game;
         final id = int.parse(part.text);
         return ItemMessagePart(
           Item(
-            _storage.resolveItemId(game!, id)!,
+            _storage.resolveItemId(game, id)!,
             id,
             part.flags.logicalAdvancement,
             part.flags.useful,
@@ -291,10 +298,10 @@ class ArchipelagoClient {
         // this is only in reference clients for the current version
         throw UnimplementedError();
       case LocationIDJSONMessagePart():
-        final game = _roomInfo.getSlotGame(part.player);
+        final game = _roomInfo.resolveSlot(part.player)!.game;
         final id = int.parse(part.text);
         return LocationMessagePart(
-          Location(_storage.resolveLocationId(game!, id)!, id),
+          Location(_storage.resolveLocationId(game, id)!, id),
         );
       case LocationNameJSONMessagePart():
         // TODO: Handle this case.
@@ -406,6 +413,99 @@ class ArchipelagoClient {
   void _send(ClientMessage message) {
     _connector.send(message);
   }
+
+  DisplayMessage _jsonMessageToDisplayMessage(PrintJSONMessage message) {
+    final parts = message.data.map(_convertJSONMessagePart).toList();
+    final receivingID = message.receiving;
+    final networkItem = message.item;
+    final Player? receivingPlayer =
+        receivingID == null
+            ? null
+            : _roomInfo.resolveUserPlayer(receivingID, _roomInfo.team);
+    final SentItem? sentItem =
+        networkItem == null ? null : _createSentItem(networkItem);
+    final int? slot = message.slot;
+    final int? team = message.team;
+    final Player? player =
+        (slot != null && team != null)
+            ? _roomInfo.resolveUserPlayer(slot, team)
+            : null;
+    final List<String>? tags = message.tags;
+    switch (message.type) {
+      case null:
+        return DisplayMessage(parts);
+      case PrintJSONType.itemsend:
+        return ItemCheat(parts, receivingPlayer!, sentItem!);
+      case PrintJSONType.itemcheat:
+        return ItemSend(parts, receivingPlayer!, sentItem!);
+      case PrintJSONType.hint:
+        final bool found = message.found!;
+        return HintMessage(parts, receivingPlayer!, sentItem!, found);
+      case PrintJSONType.join:
+        return PlayerJoined(parts, player!, tags!);
+      case PrintJSONType.tagsChanged:
+        return TagsChanged(parts, player!, tags!);
+      case PrintJSONType.part:
+        return PlayerLeft(parts, player!);
+      case PrintJSONType.chat:
+        final String chatMessage = message.message!;
+        return ChatMessage(parts, player!, chatMessage);
+      case PrintJSONType.goal:
+        return GoalReached(parts, player!);
+      case PrintJSONType.release:
+        return ItemsReleased(parts, player!);
+      case PrintJSONType.collect:
+        return ItemsCollected(parts, player!);
+      case PrintJSONType.serverChat:
+        return ServerChatMessage(parts, message.message!);
+      case PrintJSONType.tutorial:
+        return TutorialMessage(parts);
+      case PrintJSONType.commandResult:
+        return CommandResult(parts);
+      case PrintJSONType.adminCommandResult:
+        return AdminCommandResult(parts);
+      case PrintJSONType.countdown:
+        return CountdownMessage(parts, message.countdown!);
+    }
+  }
+
+  Location _resolveLocation(int playerSlot, int locationID) {
+    final NetworkSlot slot = _roomInfo.resolveSlot(playerSlot)!;
+    final String locationName =
+        _storage.resolveLocationId(slot.game, locationID)!;
+    return Location(locationName, locationID);
+  }
+
+  Item _resolveItem(NetworkItem item, [bool isForLocationInfo = false]) {
+    final String game;
+    if (isForLocationInfo) {
+      game = _roomInfo.resolveSlot(item.player)!.game;
+    } else {
+      game = _roomInfo.resolveSlot(_roomInfo.slot)!.game;
+    }
+    final String name = _storage.resolveItemId(game, item.item)!;
+    return Item(
+      name,
+      item.item,
+      item.flags.logicalAdvancement,
+      item.flags.useful,
+      item.flags.trap,
+    );
+  }
+
+  SentItem _createSentItem(NetworkItem item, [bool isForLocationInfo = false]) {
+    final Location location;
+    final Player player = _roomInfo.resolveUserPlayer(
+      item.player,
+      _roomInfo.team,
+    );
+    if (isForLocationInfo) {
+      location = _resolveLocation(item.location, _roomInfo.slot);
+    } else {
+      location = _resolveLocation(item.location, item.player);
+    }
+    return SentItem(location, _resolveItem(item, isForLocationInfo), player);
+  }
 }
 
 /// A queue to hold messages and return them asynchronously.
@@ -453,4 +553,11 @@ class HandshakeException implements Exception {
 class ArchipelagoConnectionRefused implements Exception {
   final List<ConnectionRefusedReason>? errors;
   ArchipelagoConnectionRefused(this.errors);
+}
+
+extension _ResolveUserPlayer on ArchipelagoRoomInfo {
+  Player resolveUserPlayer(int playerID, int teamID) {
+    final networkPlayer = resolvePlayer(playerID, teamID)!;
+    return Player(networkPlayer.alias, playerID);
+  }
 }

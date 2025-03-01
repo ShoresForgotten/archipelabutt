@@ -1,7 +1,5 @@
 library;
 
-import 'dart:collection';
-
 import 'package:collection/collection.dart';
 
 import 'protocol_types.dart';
@@ -81,15 +79,14 @@ class ArchipelagoRoomInfo {
         return set;
       });
 
-  String? getSlotAlias(int id) {
-    return _players.firstWhereOrNull((element) => element.slot == id)?.alias;
+  NetworkPlayer? resolvePlayer(int slot, int team) {
+    return _players.firstWhereOrNull(
+      (element) => element.slot == slot && element.team == team,
+    );
   }
 
-  String? getSlotGame(int id) {
-    return _slotInfo.entries
-        .firstWhereOrNull((element) => element.key == id)
-        ?.value
-        .game;
+  NetworkSlot? resolveSlot(int slot) {
+    return _slotInfo[slot];
   }
 
   void _updateCheckedLocations(List<int> newLocations) {

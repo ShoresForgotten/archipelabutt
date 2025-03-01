@@ -22,11 +22,9 @@ interface class ArchipelagoConnector {
     final channel = WebSocketChannel.connect(
       Uri(host: host, port: port, scheme: 'ws'),
     );
-    final stream =
-        channel.stream
-            .map((event) => jsonDecode(event) as List<ServerMessage>)
-            .expand((x) => x)
-            .asBroadcastStream();
+    final stream = channel.stream
+        .map((event) => jsonDecode(event) as List<ServerMessage>)
+        .expand((x) => x);
     final StreamSink sink = channel.sink;
     return ArchipelagoConnector._(channel, sink, stream);
   }

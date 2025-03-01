@@ -12,14 +12,15 @@ class RoomUpdate extends ArchipelagoEvent {
 }
 
 class ItemsReceived extends ArchipelagoEvent {
-  final List<ItemLocation> items;
+  final List<SentItem> items;
   final int nextEmptySlot;
 
   ItemsReceived(this.items, this.nextEmptySlot);
 }
 
 class LocationsScouted extends ArchipelagoEvent {
-  final List<ItemLocation> scouts;
+  /// [SentItem.player] refers to the receiving player here, rather than the sending player
+  final List<SentItem> scouts;
 
   LocationsScouted(this.scouts);
 }
@@ -28,6 +29,97 @@ class DisplayMessage extends ArchipelagoEvent {
   final List<MessagePart> parts;
 
   DisplayMessage(this.parts);
+}
+
+class ItemSend extends DisplayMessage {
+  final Player receiving;
+  final SentItem item;
+
+  ItemSend(super.parts, this.receiving, this.item);
+}
+
+class ItemCheat extends DisplayMessage {
+  final Player receiving;
+  final SentItem item;
+
+  ItemCheat(super.parts, this.receiving, this.item);
+}
+
+class HintMessage extends DisplayMessage {
+  final Player receiving;
+  final SentItem item;
+  final bool found;
+
+  HintMessage(super.parts, this.receiving, this.item, this.found);
+}
+
+class PlayerJoined extends DisplayMessage {
+  final Player player;
+  final List<String> tags;
+
+  PlayerJoined(super.parts, this.player, this.tags);
+}
+
+class PlayerLeft extends DisplayMessage {
+  final Player player;
+
+  PlayerLeft(super.parts, this.player);
+}
+
+class ChatMessage extends DisplayMessage {
+  final Player player;
+  final String message;
+
+  ChatMessage(super.parts, this.player, this.message);
+}
+
+class ServerChatMessage extends DisplayMessage {
+  final String message;
+
+  ServerChatMessage(super.parts, this.message);
+}
+
+class TutorialMessage extends DisplayMessage {
+  TutorialMessage(super.parts);
+}
+
+class TagsChanged extends DisplayMessage {
+  final Player player;
+  final List<String> tags;
+
+  TagsChanged(super.parts, this.player, this.tags);
+}
+
+class CommandResult extends DisplayMessage {
+  CommandResult(super.parts);
+}
+
+class AdminCommandResult extends DisplayMessage {
+  AdminCommandResult(super.parts);
+}
+
+class GoalReached extends DisplayMessage {
+  final Player player;
+
+  GoalReached(super.parts, this.player);
+}
+
+class ItemsReleased extends DisplayMessage {
+  final Player player;
+
+  ItemsReleased(super.parts, this.player);
+}
+
+class ItemsCollected extends DisplayMessage {
+  final Player player;
+
+  ItemsCollected(super.parts, this.player);
+}
+
+class CountdownMessage extends DisplayMessage {
+  final int countdown;
+
+  CountdownMessage(super.parts, this.countdown);
 }
 
 class Bounced extends ArchipelagoEvent {
@@ -155,9 +247,11 @@ class Entrance {
   const Entrance(this.name);
 }
 
-class ItemLocation {
+// Corresponds to NetworkItem in the spec
+class SentItem {
   final Location location;
   final Item item;
+  final Player player;
 
-  const ItemLocation(this.location, this.item);
+  const SentItem(this.location, this.item, this.player);
 }
