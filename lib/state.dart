@@ -220,7 +220,7 @@ class DemoController implements ArchipelabuttDeviceController {
         case ArchipelabuttVibrateCommand():
           device.scalar(
             ButtplugDeviceCommand.setAll(
-              ScalarComponent(1.0, ActuatorType.Oscillate),
+              ScalarComponent(command.speed, ActuatorType.Oscillate),
             ),
           );
           break;
