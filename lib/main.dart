@@ -1,14 +1,15 @@
-import 'package:archipelabutt/archipelago_connection_settings.dart';
-import 'package:archipelabutt/buttplug_connection_settings.dart';
-import 'package:archipelabutt/buttplug_device_settings.dart';
-import 'package:archipelabutt/state/state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'archipelago_text_client.dart';
+import 'state/state.dart';
 import 'state/archipelabutt_device.dart';
 import 'state/archipelago_connection.dart';
 import 'state/buttplug_connection.dart';
+
+import 'archipelago_connection_settings.dart';
+import 'buttplug_connection_settings.dart';
+import 'buttplug_device_settings.dart';
+import 'archipelago_text_client.dart';
 
 void main() {
   runApp(const ArchipelabuttApp());

@@ -1,7 +1,8 @@
-import 'package:archipelabutt/state/buttplug_connection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+
+import 'state/buttplug_connection.dart';
 
 class ButtplugConnectionSettings extends StatefulWidget {
   const ButtplugConnectionSettings({super.key});

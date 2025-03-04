@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import 'package:archipelago/archipelago.dart';
+
 import 'state/archipelago_connection.dart';
 
 class ArchipelagoTextClient extends StatelessWidget {

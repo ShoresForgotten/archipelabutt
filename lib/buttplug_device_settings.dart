@@ -1,10 +1,7 @@
-import 'package:archipelabutt/state/archipelabutt_device.dart';
-import 'package:archipelabutt/state/state.dart';
-import 'package:buttplug/buttplug.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:archipelago/archipelago.dart';
+
+import 'state/archipelabutt_device.dart';
 
 class ButtplugDeviceSettings extends StatefulWidget {
   const ButtplugDeviceSettings({super.key});
@@ -18,7 +15,6 @@ class ButtplugDeviceSettings extends StatefulWidget {
 class _ButtplugDeviceSettingsState extends State<ButtplugDeviceSettings> {
   ArchipelabuttDevice? selectedDevice;
   ArchipelabuttDeviceFeature? selectedFeature;
-  ArchipelabuttStrategy? selectedStrategy;
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +23,6 @@ class _ButtplugDeviceSettingsState extends State<ButtplugDeviceSettings> {
         if (!value.devices.containsValue(selectedDevice)) {
           selectedDevice = null;
           selectedFeature = null;
-          selectedStrategy = null;
         }
         final List<ArchipelabuttDeviceFeature> features = [];
         selectedDevice?.scalarFeatures?.forEach(
@@ -69,7 +64,7 @@ class _ButtplugDeviceSettingsState extends State<ButtplugDeviceSettings> {
               ],
             ),
             Divider(),
-            Placeholder(),
+            _ButtplugStrategySettings(feature: selectedFeature),
           ],
         );
       },
@@ -77,54 +72,46 @@ class _ButtplugDeviceSettingsState extends State<ButtplugDeviceSettings> {
   }
 }
 
-class _ButtplugControllerSettingsArea extends StatelessWidget {
+class _ButtplugStrategySettings extends StatelessWidget {
   final ArchipelabuttDeviceFeature? feature;
-  const _ButtplugControllerSettingsArea({super.key, required this.feature});
+
+  const _ButtplugStrategySettings({super.key, required this.feature});
 
   @override
   Widget build(BuildContext context) {
-    if (feature == null) {
-      return Text('No device selected');
+    if (feature != null) {
+      return Column(
+        children: [
+          DropdownMenu<ArchipelabuttStrategy>(
+            dropdownMenuEntries:
+                feature!.availableStrategies
+                    .map((x) => DropdownMenuEntry(label: x.name, value: x))
+                    .toList(),
+            onSelected: (value) {
+              if (value != null) {
+                feature!.activeStrategy = value;
+              }
+            },
+            initialSelection: feature!.activeStrategy,
+          ),
+          Divider(),
+        ],
+      );
     } else {
-      List<Widget> children = [];
-      feature!.settings
-          .map((e) => Placeholder())
-          .forEach((element) => children.add(element));
-      children.add(Divider());
-      feature!.strategy.settings
-          .map((e) {
-            if (e is ArchipelabuttDoubleSetting) {
-              return TextField(
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(
-                    RegExp(r'^-?[0-9]*\.?[0-9]*'),
-                  ),
-                ],
-                controller: TextEditingController(text: e.value.toString()),
-                decoration: InputDecoration(label: Text(e.label)),
-                onChanged: (value) {
-                  final newValue = double.tryParse(value);
-                  if (newValue != null) {
-                    e.value = newValue;
-                  }
-                },
-              );
-            } else if (e is ArchipelabuttUserSetting<Player>) {
-              return TextField(
-                maxLength: 16,
-                controller: TextEditingController(text: e.value.name),
-                decoration: InputDecoration(label: Text(e.label)),
-                onChanged: (value) {
-                  e.value = Player(value);
-                },
-              );
-            }
-            return Placeholder();
-          })
-          .forEach((e) => children.add(e));
-
-      return Expanded(child: ListView(children: children));
+      return Text('Select a device and feature');
     }
+  }
+}
+
+class _ButtplugIndividualSettings extends StatelessWidget {
+  final List<ArchipelabuttUserSetting> settings;
+
+  const _ButtplugIndividualSettings({super.key, required this.settings});
+
+  @override
+  Widget build(BuildContext context) {
+    //TODO
+    throw UnimplementedError();
   }
 }
 

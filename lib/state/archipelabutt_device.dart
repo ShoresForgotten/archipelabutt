@@ -1,11 +1,8 @@
 import 'dart:collection';
-import 'dart:developer';
-import 'dart:math' show max, min;
 
 import 'package:archipelago/archipelago.dart';
 import 'package:buttplug/buttplug.dart';
 import 'package:flutter/material.dart';
-import 'package:logging/logging.dart';
 
 class ArchipelabuttDeviceIndex with ChangeNotifier {
   final Map<int, ArchipelabuttDevice> _devices = {};
@@ -54,29 +51,55 @@ class ArchipelabuttDevice {
     : _scalarFeatures =
           _device.messageAttributes.scalarCmd
               ?.map(
-                (x) => ArchipelabuttDeviceFeature<ScalarComponent>(
-                  x,
+                (x) => ArchipelabuttDeviceFeature<ScalarComponent>(x, [
                   EmptyScalarStrategy(),
-                ),
+                  PointsSustainScalarStrategy(),
+                ]),
               )
               .toList();
 }
 
 class ArchipelabuttDeviceFeature<T> {
   final ClientGenericDeviceMessageAttributes _attributes;
-  List<ArchipelabuttUserSetting<dynamic>> get settings => strategy.settings;
-  String get description => _attributes.featureDescriptor;
+  List<ArchipelabuttUserSetting<dynamic>> get settings =>
+      activeStrategy.settings;
+  String get description =>
+      _attributes.featureDescriptor == ''
+          ? _actuatorTypeToString(actuatorType)
+          : _attributes.featureDescriptor;
   ActuatorType get actuatorType => _attributes.actuatorType;
   int get stepCount => _attributes.stepCount;
-  ArchipelabuttStrategy<T> strategy;
+  ArchipelabuttStrategy<T> activeStrategy;
+  List<ArchipelabuttStrategy<T>> availableStrategies;
 
   T handleEvent(ArchipelagoEvent event) =>
-      strategy.handleEvent(event, actuatorType);
+      activeStrategy.handleEvent(event, actuatorType);
 
-  ArchipelabuttDeviceFeature(this._attributes, this.strategy);
+  ArchipelabuttDeviceFeature(this._attributes, this.availableStrategies)
+    : activeStrategy = availableStrategies.first;
+
+  String _actuatorTypeToString(ActuatorType type) {
+    switch (type) {
+      case ActuatorType.Vibrate:
+        return 'Vibrate';
+      case ActuatorType.Rotate:
+        return 'Rotate';
+      case ActuatorType.Oscillate:
+        return 'Oscillate';
+      case ActuatorType.Constrict:
+        return 'Constrict';
+      case ActuatorType.Inflate:
+        return 'Inflate';
+      case ActuatorType.Position:
+        return 'Position';
+    }
+  }
 }
 
 abstract class ArchipelabuttStrategy<T> {
+  final String name;
+
+  ArchipelabuttStrategy({required this.name});
   List<ArchipelabuttUserSetting<dynamic>> get settings;
 
   T handleEvent(ArchipelagoEvent event, ActuatorType actuator);
@@ -87,15 +110,19 @@ typedef ArchipelabuttScalarStrategy = ArchipelabuttStrategy<ScalarComponent>;
 class EmptyScalarStrategy extends ArchipelabuttScalarStrategy {
   @override
   final settings = [];
+
+  EmptyScalarStrategy() : super(name: 'Empty');
   @override
   ScalarComponent handleEvent(_, actuator) => ScalarComponent(0, actuator);
 }
 
-class PointsSustainScalarStrategy implements ArchipelabuttScalarStrategy {
+class PointsSustainScalarStrategy extends ArchipelabuttScalarStrategy {
   @override
   List<ArchipelabuttUserSetting<dynamic>> get settings => pointsSystem.settings;
   ArchipelabuttPointsSystem pointsSystem = CheckPointsSystem();
   double currentLevel = 0;
+
+  PointsSustainScalarStrategy() : super(name: 'Points Sustain');
   @override
   ScalarComponent handleEvent(ArchipelagoEvent event, ActuatorType actuator) {
     currentLevel = pointsSystem.pointsChange(event, currentLevel).clamp(0, 1);

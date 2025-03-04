@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'dart:developer';
 
-import 'package:archipelabutt/state/archipelabutt_device.dart';
-import 'package:archipelabutt/state/archipelago_connection.dart';
-import 'package:archipelabutt/state/buttplug_connection.dart';
 import 'package:buttplug/buttplug.dart';
 import 'package:logging/logging.dart';
-
 import 'package:archipelago/archipelago.dart';
+
+import 'archipelabutt_device.dart';
+import 'archipelago_connection.dart';
+import 'buttplug_connection.dart';
 
 class ArchipelabuttState {
   final ArchipelagoConnection apConn;
