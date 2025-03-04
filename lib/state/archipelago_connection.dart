@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:developer';
-import 'package:archipelabutt/archipelago/archipelago.dart';
+import 'package:archipelago/archipelago.dart';
 import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
 
@@ -36,9 +36,9 @@ class ArchipelagoConnection with ChangeNotifier {
       'Connecting to Archipelago server on $host:$port, username: $name.',
       level: Level.INFO.value,
     );
+    final connector = ArchipelagoConnector(host, port);
     final client = await ArchipelagoClient.connect(
-      host: host,
-      port: port,
+      connector: connector,
       name: name,
       uuid: uuid,
       password: password,

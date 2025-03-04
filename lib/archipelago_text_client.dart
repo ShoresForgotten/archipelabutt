@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'archipelago/archipelago.dart';
+import 'package:archipelago/archipelago.dart';
 import 'state/archipelago_connection.dart';
 
 class ArchipelagoTextClient extends StatelessWidget {
@@ -17,16 +17,31 @@ class ArchipelagoTextClient extends StatelessWidget {
       ) {
         return Column(
           children: [
-            Flexible(
-              child: _ArchipelagoMessageLog(),
-            ),
-            TextField(
-              decoration: InputDecoration(hintText: 'Send a message'),
-              onSubmitted: (message) {
-                value.say(message);
-              },
-            ),
+            Flexible(child: _ArchipelagoMessageLog()),
+            Divider(),
+            MessageField(),
           ],
+        );
+      },
+    );
+  }
+}
+
+class MessageField extends StatelessWidget {
+  final TextEditingController _textEditingController = TextEditingController();
+  MessageField({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<ArchipelagoConnection>(
+      builder: (context, value, child) {
+        return TextField(
+          controller: _textEditingController,
+          decoration: InputDecoration(hintText: 'Send a message'),
+          onSubmitted: (message) {
+            value.say(message);
+            _textEditingController.text = '';
+          },
         );
       },
     );

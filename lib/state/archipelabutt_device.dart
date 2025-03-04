@@ -2,7 +2,7 @@ import 'dart:collection';
 import 'dart:developer';
 import 'dart:math' show max, min;
 
-import 'package:archipelabutt/archipelago/archipelago.dart';
+import 'package:archipelago/archipelago.dart';
 import 'package:buttplug/buttplug.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';

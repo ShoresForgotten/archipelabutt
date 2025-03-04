@@ -4,8 +4,7 @@ import 'package:buttplug/buttplug.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-
-import 'archipelago/archipelago.dart';
+import 'package:archipelago/archipelago.dart';
 
 class ButtplugDeviceSettings extends StatefulWidget {
   const ButtplugDeviceSettings({super.key});

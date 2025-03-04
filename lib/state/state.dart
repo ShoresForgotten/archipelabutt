@@ -7,7 +7,7 @@ import 'package:archipelabutt/state/buttplug_connection.dart';
 import 'package:buttplug/buttplug.dart';
 import 'package:logging/logging.dart';
 
-import '../archipelago/archipelago.dart';
+import 'package:archipelago/archipelago.dart';
 
 class ArchipelabuttState {
   final ArchipelagoConnection apConn;
