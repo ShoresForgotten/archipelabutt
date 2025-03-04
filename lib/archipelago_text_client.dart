@@ -1,32 +1,58 @@
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import 'archipelago/archipelago.dart';
+import 'state/archipelago_connection.dart';
 
-class ArchipelagoMessageLog extends StatelessWidget {
-  final List<DisplayMessage> messages;
-  const ArchipelagoMessageLog({super.key, required this.messages});
+class ArchipelagoTextClient extends StatelessWidget {
+  const ArchipelagoTextClient({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      itemCount: messages.length,
-      itemBuilder: (context, index) {
-        return ArchipelagoMessage(message: messages[index]);
-      },
+    return Expanded(
+      child: Consumer<ArchipelagoConnection>(
+        builder: (
+          BuildContext context,
+          ArchipelagoConnection value,
+          Widget? child,
+        ) {
+          return Column(
+            children: [
+              ChangeNotifierProvider<MessageList>(
+                create: (_) {
+                  return value.displayMessages;
+                },
+                child: ArchipelagoMessageLog(),
+              ),
+              TextField(
+                decoration: InputDecoration(hintText: 'Send a message'),
+                onSubmitted: (message) {
+                  value.say(message);
+                },
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 }
 
-class MessageList extends ChangeNotifier {
-  final List<DisplayMessage> _messages;
-  List<DisplayMessage> get messages => UnmodifiableListView(_messages);
+class ArchipelagoMessageLog extends StatelessWidget {
+  const ArchipelagoMessageLog({super.key});
 
-  MessageList(this._messages);
-
-  void addMessage(DisplayMessage message) {
-    _messages.add(message);
-    notifyListeners();
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<MessageList>(
+      builder: (BuildContext context, MessageList value, Widget? child) {
+        return ListView.builder(
+          itemCount: value.messages.length,
+          itemBuilder: (context, index) {
+            return ArchipelagoMessage(message: value.messages[index]);
+          },
+        );
+      },
+    );
   }
 }
 

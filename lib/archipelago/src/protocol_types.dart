@@ -213,6 +213,9 @@ class TextJSONMessagePart extends JSONMessagePart {
   bool operator ==(Object other) {
     return other is TextJSONMessagePart && other.text == text;
   }
+
+  @override
+  int get hashCode => text.hashCode;
 }
 
 /// Text is the player id of somebody on the client's team. Should be resolved to a name.
@@ -232,6 +235,9 @@ class PlayerIDJSONMessagePart extends JSONMessagePart {
   bool operator ==(Object other) {
     return other is PlayerIDJSONMessagePart && other.text == text;
   }
+
+  @override
+  int get hashCode => text.hashCode;
 }
 
 /// Text is the name of a player in the session. Can't be resovled to an id.
@@ -251,6 +257,9 @@ class PlayerNameJSONMessagePart extends JSONMessagePart {
   bool operator ==(Object other) {
     return other is PlayerNameJSONMessagePart && other.text == text;
   }
+
+  @override
+  int get hashCode => text.hashCode;
 }
 
 /// Text contains an item id, should be resolved to a name.
@@ -374,6 +383,9 @@ class EntranceNameJSONMessagePart extends JSONMessagePart {
   bool operator ==(Object other) {
     return other is EntranceNameJSONMessagePart && other.text == text;
   }
+
+  @override
+  int get hashCode => text.hashCode;
 }
 
 /// The [HintStatus] of a hint.

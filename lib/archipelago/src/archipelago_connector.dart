@@ -9,6 +9,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 /// A connection to an Archipelago server.
 /// Can send and receive lists of JSON objects.
+
 interface class ArchipelagoConnector {
   final WebSocketChannel _channel;
   Future<void> get ready => _channel.ready;
@@ -36,4 +37,6 @@ interface class ArchipelagoConnector {
   void sendMultiple(List<ClientMessage> messages) {
     _sink.add(jsonEncode(messages));
   }
+
+  //TODO: Add disconnect
 }

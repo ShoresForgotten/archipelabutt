@@ -47,6 +47,8 @@ class ArchipelagoClient {
     this._streamController,
   );
 
+  //TODO: Add disconnect
+
   static Future<ArchipelagoClient> connect({
     required String host,
     required int port,
