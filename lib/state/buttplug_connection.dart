@@ -2,9 +2,10 @@ import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
 import 'package:buttplug/buttplug.dart';
+import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 
-class ButtplugConnection {
+class ButtplugConnection with ChangeNotifier {
   ButtplugClient? client;
   String host = 'localhost';
   int port = 12345;

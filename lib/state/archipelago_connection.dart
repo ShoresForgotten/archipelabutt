@@ -5,7 +5,7 @@ import 'package:archipelabutt/archipelago/archipelago.dart';
 import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
 
-class ArchipelagoConnection extends ChangeNotifier {
+class ArchipelagoConnection with ChangeNotifier {
   ArchipelagoClient? client;
   final StreamController<ArchipelagoEvent> _streamController =
       StreamController.broadcast();

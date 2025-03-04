@@ -9,37 +9,32 @@ class ArchipelagoTextClient extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Consumer<ArchipelagoConnection>(
-        builder: (
-          BuildContext context,
-          ArchipelagoConnection value,
-          Widget? child,
-        ) {
-          return Column(
-            children: [
-              ChangeNotifierProvider<MessageList>(
-                create: (_) {
-                  return value.displayMessages;
-                },
-                child: ArchipelagoMessageLog(),
-              ),
-              TextField(
-                decoration: InputDecoration(hintText: 'Send a message'),
-                onSubmitted: (message) {
-                  value.say(message);
-                },
-              ),
-            ],
-          );
-        },
-      ),
+    return Consumer<ArchipelagoConnection>(
+      builder: (
+        BuildContext context,
+        ArchipelagoConnection value,
+        Widget? child,
+      ) {
+        return Column(
+          children: [
+            Flexible(
+              child: _ArchipelagoMessageLog(),
+            ),
+            TextField(
+              decoration: InputDecoration(hintText: 'Send a message'),
+              onSubmitted: (message) {
+                value.say(message);
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 }
 
-class ArchipelagoMessageLog extends StatelessWidget {
-  const ArchipelagoMessageLog({super.key});
+class _ArchipelagoMessageLog extends StatelessWidget {
+  const _ArchipelagoMessageLog({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +43,7 @@ class ArchipelagoMessageLog extends StatelessWidget {
         return ListView.builder(
           itemCount: value.messages.length,
           itemBuilder: (context, index) {
-            return ArchipelagoMessage(message: value.messages[index]);
+            return _ArchipelagoMessage(message: value.messages[index]);
           },
         );
       },
@@ -56,10 +51,10 @@ class ArchipelagoMessageLog extends StatelessWidget {
   }
 }
 
-class ArchipelagoMessage extends StatelessWidget {
+class _ArchipelagoMessage extends StatelessWidget {
   final DisplayMessage message;
 
-  const ArchipelagoMessage({super.key, required this.message});
+  const _ArchipelagoMessage({super.key, required this.message});
   @override
   Widget build(BuildContext context) {
     return RichText(

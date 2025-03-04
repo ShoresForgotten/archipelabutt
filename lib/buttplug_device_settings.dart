@@ -7,32 +7,38 @@ import 'package:provider/provider.dart';
 
 import 'archipelago/archipelago.dart';
 
-class ButtplugDeviceSelector extends StatefulWidget {
-  const ButtplugDeviceSelector({super.key});
+class ButtplugDeviceSettings extends StatefulWidget {
+  const ButtplugDeviceSettings({super.key});
 
   @override
   State<StatefulWidget> createState() {
-    return _ButtplugDeviceSelectorState();
+    return _ButtplugDeviceSettingsState();
   }
 }
 
-class _ButtplugDeviceSelectorState extends State<ButtplugDeviceSelector> {
-  TextEditingController deviceSelectionController = TextEditingController();
-  GlobalKey<FormState> _deviceSelectionKey = GlobalKey();
-  ArchipelabuttDevice? currentDeviceControllerSelection;
+class _ButtplugDeviceSettingsState extends State<ButtplugDeviceSettings> {
+  ArchipelabuttDevice? selectedDevice;
+  ArchipelabuttDeviceFeature? selectedFeature;
+  ArchipelabuttStrategy? selectedStrategy;
 
   @override
   Widget build(BuildContext context) {
     return Consumer<ArchipelabuttDeviceIndex>(
       builder: (context, value, child) {
-        deviceSelectionController.text =
-            currentDeviceControllerSelection?.name ?? '';
+        if (!value.devices.containsValue(selectedDevice)) {
+          selectedDevice = null;
+          selectedFeature = null;
+          selectedStrategy = null;
+        }
+        final List<ArchipelabuttDeviceFeature> features = [];
+        selectedDevice?.scalarFeatures?.forEach(
+          (element) => features.add(element),
+        );
         return Column(
           children: [
             Row(
               children: [
                 DropdownMenu<ArchipelabuttDevice>(
-                  controller: deviceSelectionController,
                   dropdownMenuEntries:
                       value.devices.values
                           .map(
@@ -41,64 +47,30 @@ class _ButtplugDeviceSelectorState extends State<ButtplugDeviceSelector> {
                           .toList(),
                   onSelected: (ArchipelabuttDevice? device) {
                     setState(() {
-                      currentDeviceControllerSelection = device;
+                      selectedDevice = device;
                     });
                   },
                 ),
-                DropdownMenu<
-                  ArchipelabuttDeviceController Function(ButtplugClientDevice)
-                >(
+                DropdownMenu<ArchipelabuttDeviceFeature>(
                   dropdownMenuEntries:
-                      ArchipelabuttDeviceController.options.keys
-                          .map(
-                            (k) => DropdownMenuEntry(
-                              value: ArchipelabuttDeviceController.options[k]!,
-                              label: k,
-                            ),
-                          )
-                          .toList(),
-                  initialSelection:
-                      ArchipelabuttDeviceController
-                          .options[currentDeviceControllerSelection
-                          ?.controller
-                          .cName],
-                  onSelected: (value) {
-                    if (value != null) {
-                      currentDeviceControllerSelection?.controller = value(
-                        currentDeviceControllerSelection!.controller.device,
-                      );
-                      setState(() {});
-                    }
-                  },
-                ),
-                DropdownMenu<ArchipelabuttCommandStrategy Function()>(
-                  dropdownMenuEntries:
-                      ArchipelabuttCommandStrategy.options.keys
+                      features
                           .map(
                             (e) => DropdownMenuEntry(
-                              value: ArchipelabuttCommandStrategy.options[e]!,
-                              label: e,
+                              value: e,
+                              label: e.description,
                             ),
                           )
                           .toList(),
-                  initialSelection:
-                      ArchipelabuttCommandStrategy
-                          .options[currentDeviceControllerSelection
-                          ?.strategy
-                          .strategyName],
-                  onSelected: (value) {
-                    if (value != null) {
-                      currentDeviceControllerSelection?.strategy = value();
-                      setState(() {});
-                    }
+                  onSelected: (ArchipelabuttDeviceFeature? value) {
+                    setState(() {
+                      selectedFeature = value;
+                    });
                   },
                 ),
               ],
             ),
             Divider(),
-            ButtplugControllerSettingsArea(
-              device: currentDeviceControllerSelection,
-            ),
+            Placeholder(),
           ],
         );
       },
@@ -106,21 +78,21 @@ class _ButtplugDeviceSelectorState extends State<ButtplugDeviceSelector> {
   }
 }
 
-class ButtplugControllerSettingsArea extends StatelessWidget {
-  final ArchipelabuttDevice? device;
-  const ButtplugControllerSettingsArea({super.key, required this.device});
+class _ButtplugControllerSettingsArea extends StatelessWidget {
+  final ArchipelabuttDeviceFeature? feature;
+  const _ButtplugControllerSettingsArea({super.key, required this.feature});
 
   @override
   Widget build(BuildContext context) {
-    if (device == null) {
+    if (feature == null) {
       return Text('No device selected');
     } else {
       List<Widget> children = [];
-      device.settings
+      feature!.settings
           .map((e) => Placeholder())
           .forEach((element) => children.add(element));
       children.add(Divider());
-      device!.strategy.settings
+      feature!.strategy.settings
           .map((e) {
             if (e is ArchipelabuttDoubleSetting) {
               return TextField(
@@ -155,4 +127,8 @@ class ButtplugControllerSettingsArea extends StatelessWidget {
       return Expanded(child: ListView(children: children));
     }
   }
+}
+
+abstract class _ArchipelabuttSetting<T> extends FormField {
+  const _ArchipelabuttSetting({super.key, required super.builder});
 }

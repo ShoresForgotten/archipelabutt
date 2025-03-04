@@ -4,19 +4,22 @@ import 'dart:math' show max, min;
 
 import 'package:archipelabutt/archipelago/archipelago.dart';
 import 'package:buttplug/buttplug.dart';
+import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 
-class ArchipelabuttDeviceIndex {
+class ArchipelabuttDeviceIndex with ChangeNotifier {
   final Map<int, ArchipelabuttDevice> _devices = {};
   UnmodifiableMapView<int, ArchipelabuttDevice> get devices =>
       UnmodifiableMapView(_devices);
 
   void addDevice(ButtplugClientDevice device) {
     _devices[device.index] = ArchipelabuttDevice(device);
+    notifyListeners();
   }
 
   void removeDevice(ButtplugClientDevice device) {
     _devices.remove(device.index);
+    notifyListeners();
   }
 
   void handleEvent(ArchipelagoEvent event) {
@@ -29,8 +32,9 @@ class ArchipelabuttDeviceIndex {
 class ArchipelabuttDevice {
   final ButtplugClientDevice _device;
   String get name => _device.name;
-  final List<ArchipelabuttScalarDeviceFeature>? _scalarFeatures;
-  UnmodifiableListView<ArchipelabuttScalarDeviceFeature>? get scalarFeatures =>
+  final List<ArchipelabuttDeviceFeature<ScalarComponent>>? _scalarFeatures;
+  UnmodifiableListView<ArchipelabuttDeviceFeature<ScalarComponent>>?
+  get scalarFeatures =>
       _scalarFeatures == null ? null : UnmodifiableListView(_scalarFeatures);
   void handleEvent(ArchipelagoEvent event) {
     if (_scalarFeatures != null) {
@@ -42,38 +46,49 @@ class ArchipelabuttDevice {
     }
   }
 
+  void stop() {
+    //TODO
+  }
+
   ArchipelabuttDevice(this._device)
     : _scalarFeatures =
           _device.messageAttributes.scalarCmd
-              ?.map((x) => ArchipelabuttScalarDeviceFeature(x))
+              ?.map(
+                (x) => ArchipelabuttDeviceFeature<ScalarComponent>(
+                  x,
+                  EmptyScalarStrategy(),
+                ),
+              )
               .toList();
 }
 
-class ArchipelabuttScalarDeviceFeature {
+class ArchipelabuttDeviceFeature<T> {
   final ClientGenericDeviceMessageAttributes _attributes;
+  List<ArchipelabuttUserSetting<dynamic>> get settings => strategy.settings;
   String get description => _attributes.featureDescriptor;
   ActuatorType get actuatorType => _attributes.actuatorType;
   int get stepCount => _attributes.stepCount;
-  ArchipelabuttScalarStrategy strategy = EmptyScalarStrategy();
-  ScalarComponent handleEvent(ArchipelagoEvent event) {
-    final scalar = strategy.handleEvent(event);
-    return ScalarComponent(scalar, actuatorType);
-  }
+  ArchipelabuttStrategy<T> strategy;
 
-  ArchipelabuttScalarDeviceFeature(this._attributes);
+  T handleEvent(ArchipelagoEvent event) =>
+      strategy.handleEvent(event, actuatorType);
+
+  ArchipelabuttDeviceFeature(this._attributes, this.strategy);
 }
 
-abstract interface class ArchipelabuttScalarStrategy {
-  double handleEvent(ArchipelagoEvent event);
-
+abstract class ArchipelabuttStrategy<T> {
   List<ArchipelabuttUserSetting<dynamic>> get settings;
+
+  T handleEvent(ArchipelagoEvent event, ActuatorType actuator);
 }
 
-class EmptyScalarStrategy implements ArchipelabuttScalarStrategy {
+typedef ArchipelabuttScalarStrategy = ArchipelabuttStrategy<ScalarComponent>;
+
+class EmptyScalarStrategy extends ArchipelabuttScalarStrategy {
   @override
   final settings = [];
   @override
-  double handleEvent(_) => 0;
+  ScalarComponent handleEvent(_, actuator) => ScalarComponent(0, actuator);
 }
 
 class PointsSustainScalarStrategy implements ArchipelabuttScalarStrategy {
@@ -82,9 +97,9 @@ class PointsSustainScalarStrategy implements ArchipelabuttScalarStrategy {
   ArchipelabuttPointsSystem pointsSystem = CheckPointsSystem();
   double currentLevel = 0;
   @override
-  double handleEvent(ArchipelagoEvent event) {
+  ScalarComponent handleEvent(ArchipelagoEvent event, ActuatorType actuator) {
     currentLevel = pointsSystem.pointsChange(event, currentLevel).clamp(0, 1);
-    return currentLevel;
+    return ScalarComponent(currentLevel, actuator);
   }
 }
 
@@ -154,60 +169,30 @@ class CheckPointsSystem implements ArchipelabuttPointsSystem {
   ];
 }
 
-interface class ArchipelabuttUserSetting<T> {
+class ArchipelabuttUserSetting<T> {
   final String label;
   T value;
 
   ArchipelabuttUserSetting(this.value, this.label);
 }
 
-class ArchipelabuttDoubleSetting implements ArchipelabuttUserSetting<double> {
-  @override
-  final String label;
-  double _value;
-  final double? _maxValue;
-  final double? _minValue;
-  @override
-  double get value => _value;
-  @override
-  set value(double val) {
-    if (_minValue != null && _maxValue != null) {
-      _value = val.clamp(_minValue, _maxValue);
-    } else if (_minValue != null) {
-      _value = max(val, _minValue);
-    } else if (_maxValue != null) {
-      _value = min(val, _maxValue);
-    } else {
-      _value = val;
-    }
-  }
+class ArchipelabuttDoubleSetting extends ArchipelabuttUserSetting<double> {
+  final double? maxValue;
+  final double? minValue;
 
   ArchipelabuttDoubleSetting(
-    this._value,
-    this.label, [
-    this._minValue,
-    this._maxValue,
+    super.initialValue,
+    super.label, [
+    this.minValue,
+    this.maxValue,
   ]);
 }
 
-class ArchipelabuttListSetting<T> implements ArchipelabuttUserSetting<T> {
-  @override
-  final String label;
+class ArchipelabuttListSetting<T> extends ArchipelabuttUserSetting<T> {
   final List<T> _possibleValues;
   List<T> get possibleValues => UnmodifiableListView(_possibleValues);
-  T _value;
-  @override
-  T get value => _value;
-  @override
-  set value(T val) {
-    if (!_possibleValues.contains(val) || val != null) {
-      throw Error();
-    } else {
-      _value = val;
-    }
-  }
 
   List<T> get settings => UnmodifiableListView(_possibleValues);
 
-  ArchipelabuttListSetting(this._possibleValues, this._value, this.label);
+  ArchipelabuttListSetting(super.value, super.label, this._possibleValues);
 }

@@ -4,11 +4,10 @@ import 'package:archipelabutt/state/archipelabutt_device.dart';
 import 'package:archipelabutt/state/archipelago_connection.dart';
 import 'package:archipelabutt/state/buttplug_connection.dart';
 import 'package:buttplug/buttplug.dart';
-import 'package:flutter/material.dart';
 
 import '../archipelago/archipelago.dart';
 
-class ArchipelabuttState extends ChangeNotifier {
+class ArchipelabuttState {
   final ArchipelagoConnection apConn;
   final ButtplugConnection bpConn = ButtplugConnection();
   Stream<ArchipelagoEvent> get apStream => apConn.stream;

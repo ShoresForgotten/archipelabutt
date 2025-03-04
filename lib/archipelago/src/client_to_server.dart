@@ -28,7 +28,7 @@ class ConnectMessage extends ClientMessage {
   final String uuid;
   final NetworkVersion version;
   //TODO: make this work without analysis complaining
-  final _ItemsHandlingFlags? itemsHandling;
+  final _ItemsHandlingFlags? _itemsHandling;
   bool? get receiveOtherWorlds => _itemsHandling?.otherWorlds;
   bool? get receiveOwnWorld => _itemsHandling?.ownWorld;
   bool? get receiveStartingInventory => _itemsHandling?.startingInventory;
