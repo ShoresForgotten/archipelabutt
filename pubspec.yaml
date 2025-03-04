@@ -42,6 +42,8 @@ dependencies:
   json_annotation: ^4.9.0
   provider: ^6.1.2
   logging: ^1.3.0
+  archipelago:
+    git: git@github.com:ShoresForgotten/archipelago_dart.git
 
 dev_dependencies:
   flutter_test:
