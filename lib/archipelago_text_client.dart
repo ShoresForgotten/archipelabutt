@@ -49,7 +49,7 @@ class MessageField extends StatelessWidget {
 }
 
 class _ArchipelagoMessageLog extends StatelessWidget {
-  const _ArchipelagoMessageLog({super.key});
+  const _ArchipelagoMessageLog();
 
   @override
   Widget build(BuildContext context) {
@@ -69,7 +69,7 @@ class _ArchipelagoMessageLog extends StatelessWidget {
 class _ArchipelagoMessage extends StatelessWidget {
   final DisplayMessage message;
 
-  const _ArchipelagoMessage({super.key, required this.message});
+  const _ArchipelagoMessage({required this.message});
   @override
   Widget build(BuildContext context) {
     return RichText(

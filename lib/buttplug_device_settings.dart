@@ -1,3 +1,5 @@
+import 'package:archipelabutt/state/archipelago_connection.dart';
+import 'package:archipelago/archipelago.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -64,7 +66,8 @@ class _ButtplugDeviceSettingsState extends State<ButtplugDeviceSettings> {
               ],
             ),
             Divider(),
-            _ButtplugStrategySettings(feature: selectedFeature),
+            _ButtplugStrategySelection(feature: selectedFeature),
+            Divider(),
           ],
         );
       },
@@ -72,10 +75,10 @@ class _ButtplugDeviceSettingsState extends State<ButtplugDeviceSettings> {
   }
 }
 
-class _ButtplugStrategySettings extends StatelessWidget {
+class _ButtplugStrategySelection extends StatelessWidget {
   final ArchipelabuttDeviceFeature? feature;
 
-  const _ButtplugStrategySettings({super.key, required this.feature});
+  const _ButtplugStrategySelection({required this.feature});
 
   @override
   Widget build(BuildContext context) {
@@ -95,26 +98,114 @@ class _ButtplugStrategySettings extends StatelessWidget {
             initialSelection: feature!.activeStrategy,
           ),
           Divider(),
+          _ButtplugStrategySettings(strategy: feature!.activeStrategy),
         ],
       );
     } else {
-      return Text('Select a device and feature');
+      return Text('No feature selected');
     }
   }
 }
 
-class _ButtplugIndividualSettings extends StatelessWidget {
-  final List<ArchipelabuttUserSetting> settings;
+class _ButtplugStrategySettings extends StatelessWidget {
+  final ArchipelabuttStrategy strategy;
 
-  const _ButtplugIndividualSettings({super.key, required this.settings});
+  const _ButtplugStrategySettings({required this.strategy});
 
   @override
   Widget build(BuildContext context) {
-    //TODO
-    throw UnimplementedError();
+    return Form(
+      child: Column(
+        children:
+            strategy.settings
+                .map((e) => _ArchipelabuttUserSettingWidget(setting: e))
+                .toList(),
+      ),
+    );
   }
 }
 
-abstract class _ArchipelabuttSetting<T> extends FormField {
-  const _ArchipelabuttSetting({super.key, required super.builder});
+class _ArchipelabuttUserSettingWidget extends StatelessWidget {
+  final ArchipelabuttUserSetting setting;
+
+  const _ArchipelabuttUserSettingWidget({super.key, required this.setting});
+
+  @override
+  Widget build(BuildContext context) {
+    switch (setting) {
+      case PlayerSetting():
+        return _ArchipelabuttPlayerSettingWidget(
+          setting: setting as PlayerSetting,
+        );
+      case DoubleSetting():
+        return _ArchipelabuttDoubleSettingWidget(
+          setting: setting as DoubleSetting,
+        );
+    }
+  }
+}
+
+class _ArchipelabuttPlayerSettingWidget extends StatelessWidget {
+  final PlayerSetting setting;
+
+  const _ArchipelabuttPlayerSettingWidget({super.key, required this.setting});
+
+  @override
+  Widget build(BuildContext context) {
+    // TODO: Consider changing state management to avoid this Consumer
+    return Consumer<ArchipelagoConnection>(
+      builder: (context, value, child) {
+        return FormField<Player>(
+          builder: (field) {
+            return DropdownMenu(
+              dropdownMenuEntries:
+                  value.client?.players
+                      .map((e) => DropdownMenuEntry(value: e, label: e.name))
+                      .toList() ??
+                  [],
+              initialSelection: setting.value,
+            );
+          },
+          onSaved: (newValue) {
+            setting.value = newValue;
+          },
+        );
+      },
+    );
+  }
+}
+
+class _ArchipelabuttDoubleSettingWidget extends StatelessWidget {
+  final DoubleSetting setting;
+
+  const _ArchipelabuttDoubleSettingWidget({super.key, required this.setting});
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      decoration: InputDecoration(label: Text(setting.name)),
+      validator: (String? input) {
+        if (input != null) {
+          final parsed = double.tryParse(input);
+          if (parsed != null) {
+            if (setting.maxValue != null && parsed > setting.maxValue!) {
+              // TODO: This better
+              return 'Input is larger than max value';
+            } else if (setting.minValue != null && parsed < setting.minValue!) {
+              return 'Input is smaller than minimum value';
+            }
+          } else {
+            // TODO: Limit inputs
+            return 'Input is not a number';
+          }
+        } else {
+          return 'Field cannot be empty';
+        }
+      },
+      onSaved: (newValue) {
+        setting.value = double.parse(newValue!);
+      },
+      initialValue: setting.value.toString(),
+    );
+  }
 }

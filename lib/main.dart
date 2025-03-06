@@ -40,82 +40,59 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  int screenIndex = 0;
   final ArchipelabuttState state = ArchipelabuttState('Bingus');
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      drawer: NavigationDrawer(
-        selectedIndex: screenIndex,
-        onDestinationSelected: (value) {
-          setState(() {
-            screenIndex = value;
-          });
-        },
-        children:
-            pages
-                .map(
-                  (e) => NavigationDrawerDestination(
-                    icon: e.icon,
-                    label: Text(e.name),
-                  ),
-                )
-                .toList(),
-      ),
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Container(
-        margin: EdgeInsets.all(8),
-        alignment: Alignment.center,
-        child: MultiProvider(
-          providers: [
-            ChangeNotifierProvider<ArchipelabuttDeviceIndex>(
-              create: (_) => state.bpDevices,
+    return DefaultTabController(
+      length: 5,
+      child: Scaffold(
+        appBar: AppBar(
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Archipelago Log', icon: Icon(Icons.chat_bubble)),
+              Tab(text: 'Device Settings', icon: Icon(Icons.settings)),
+              Tab(
+                text: 'Archipelago Connection',
+                icon: Icon(Icons.question_mark),
+              ),
+              Tab(text: 'Buttplug Connection', icon: Icon(Icons.question_mark)),
+              Tab(text: 'License Information', icon: Icon(Icons.pages)),
+            ],
+          ),
+          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+          title: Text(widget.title),
+        ),
+        body: Container(
+          margin: EdgeInsets.all(8),
+          alignment: Alignment.center,
+          child: MultiProvider(
+            providers: [
+              ChangeNotifierProvider<ArchipelabuttDeviceIndex>(
+                create: (_) => state.bpDevices,
+              ),
+              ChangeNotifierProvider<ArchipelagoConnection>(
+                create: (_) => state.apConn,
+              ),
+              ChangeNotifierProvider<ButtplugConnection>(
+                create: (_) => state.bpConn,
+              ),
+              ChangeNotifierProvider<MessageList>(
+                create: (_) => state.apConn.displayMessages,
+              ),
+            ],
+            child: const TabBarView(
+              children: [
+                ArchipelagoTextClient(),
+                ButtplugDeviceSettings(),
+                ArchipelagoConnectionSettings(),
+                ButtplugConnectionSettings(),
+                LicensePage(),
+              ],
             ),
-            ChangeNotifierProvider<ArchipelagoConnection>(
-              create: (_) => state.apConn,
-            ),
-            ChangeNotifierProvider<ButtplugConnection>(
-              create: (_) => state.bpConn,
-            ),
-            ChangeNotifierProvider<MessageList>(
-              create: (_) => state.apConn.displayMessages,
-            ),
-          ],
-          child: pages[screenIndex].body,
+          ),
         ),
       ),
     );
   }
 }
-
-class AppPage {
-  final String name;
-  final Widget icon;
-  final Widget body;
-
-  const AppPage(this.name, this.icon, this.body);
-}
-
-const List<AppPage> pages = [
-  AppPage('Archipelago Log', Icon(Icons.chat_bubble), ArchipelagoTextClient()),
-  AppPage('Intensity Settings', Icon(Icons.settings), ButtplugDeviceSettings()),
-  AppPage(
-    'Archipelago Connection',
-    Icon(Icons.question_mark),
-    ArchipelagoConnectionSettings(),
-  ),
-  AppPage(
-    'Buttplug Connection',
-    Icon(Icons.question_mark),
-    ButtplugConnectionSettings(),
-  ),
-];

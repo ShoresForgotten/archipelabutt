@@ -1,5 +1,7 @@
 import 'dart:collection';
 
+import 'package:archipelabutt/feature_strategy/archipelabutt_points_system.dart';
+import 'package:archipelabutt/feature_strategy/points_sustain_scalar_strategy.dart';
 import 'package:archipelago/archipelago.dart';
 import 'package:buttplug/buttplug.dart';
 import 'package:flutter/material.dart';
@@ -52,7 +54,6 @@ class ArchipelabuttDevice {
           _device.messageAttributes.scalarCmd
               ?.map(
                 (x) => ArchipelabuttDeviceFeature<ScalarComponent>(x, [
-                  EmptyScalarStrategy(),
                   PointsSustainScalarStrategy(),
                 ]),
               )
@@ -61,8 +62,6 @@ class ArchipelabuttDevice {
 
 class ArchipelabuttDeviceFeature<T> {
   final ClientGenericDeviceMessageAttributes _attributes;
-  List<ArchipelabuttUserSetting<dynamic>> get settings =>
-      activeStrategy.settings;
   String get description =>
       _attributes.featureDescriptor == ''
           ? _actuatorTypeToString(actuatorType)
@@ -96,7 +95,8 @@ class ArchipelabuttDeviceFeature<T> {
   }
 }
 
-abstract class ArchipelabuttStrategy<T> {
+// TODO: Consider making this work with factory objects
+abstract interface class ArchipelabuttStrategy<T> {
   final String name;
 
   ArchipelabuttStrategy({required this.name});
@@ -107,119 +107,41 @@ abstract class ArchipelabuttStrategy<T> {
 
 typedef ArchipelabuttScalarStrategy = ArchipelabuttStrategy<ScalarComponent>;
 
-class EmptyScalarStrategy extends ArchipelabuttScalarStrategy {
-  @override
-  final settings = [];
+sealed class ArchipelabuttUserSetting<T> {
+  final String name;
+  T value;
 
-  EmptyScalarStrategy() : super(name: 'Empty');
-  @override
-  ScalarComponent handleEvent(_, actuator) => ScalarComponent(0, actuator);
+  ArchipelabuttUserSetting(this.name, this.value);
 }
 
-class PointsSustainScalarStrategy extends ArchipelabuttScalarStrategy {
-  @override
-  List<ArchipelabuttUserSetting<dynamic>> get settings => pointsSystem.settings;
-  ArchipelabuttPointsSystem pointsSystem = CheckPointsSystem();
-  double currentLevel = 0;
+class DoubleSetting extends ArchipelabuttUserSetting<double> {
+  double? maxValue;
+  double? minValue;
 
-  PointsSustainScalarStrategy() : super(name: 'Points Sustain');
-  @override
-  ScalarComponent handleEvent(ArchipelagoEvent event, ActuatorType actuator) {
-    currentLevel = pointsSystem.pointsChange(event, currentLevel).clamp(0, 1);
-    return ScalarComponent(currentLevel, actuator);
-  }
-}
+  DoubleSetting(super.name, super.value, [this.minValue, this.maxValue]);
 
-abstract interface class ArchipelabuttPointsSystem {
-  List<ArchipelabuttUserSetting> get settings;
-  double pointsChange(ArchipelagoEvent event, [double currentLevel]);
-}
-
-class CheckPointsSystem implements ArchipelabuttPointsSystem {
-  ArchipelabuttDoubleSetting basePointsValue;
-  ArchipelabuttDoubleSetting logicalAdvancementModifier;
-  ArchipelabuttDoubleSetting usefulModifier;
-  ArchipelabuttDoubleSetting trapModifier;
-  ArchipelabuttUserSetting<Player> trackedPlayer;
-
-  CheckPointsSystem([
-    double? basePointsValue,
-    double? logicalAdvancementModifier,
-    double? usefulModifier,
-    double? trapModifier,
-    Player? trackedPlayer,
-  ]) : basePointsValue = ArchipelabuttDoubleSetting(
-         basePointsValue ?? 0,
-         'Base value',
-       ),
-       logicalAdvancementModifier = ArchipelabuttDoubleSetting(
-         logicalAdvancementModifier ?? 0,
-         'Logical advancement modifier',
-       ),
-       usefulModifier = ArchipelabuttDoubleSetting(
-         usefulModifier ?? 0,
-         'Useful modifier',
-       ),
-       trapModifier = ArchipelabuttDoubleSetting(
-         trapModifier ?? 0,
-         'Trap modifier',
-       ),
-       trackedPlayer = ArchipelabuttUserSetting<Player>(
-         Player('Placeholder'),
-         'Tracked Player',
-       );
-
-  @override
-  double pointsChange(ArchipelagoEvent event, [double currentLevel = 0]) {
-    if (event is DisplayMessage &&
-        event is ItemSend &&
-        event.item.player.name == trackedPlayer.value.name) {
-      var sum = currentLevel + basePointsValue.value;
-      if (event.item.item.logicalAdvancement) {
-        sum += logicalAdvancementModifier.value;
-      }
-      if (event.item.item.useful) sum += usefulModifier.value;
-      if (event.item.item.trap) sum += trapModifier.value;
-      return sum;
+  bool validSetting(double val) {
+    if (maxValue != null && val > maxValue!) {
+      return false;
+    } else if (minValue != null && val < minValue!) {
+      return false;
     } else {
-      return currentLevel;
+      return true;
     }
   }
 
   @override
-  List<ArchipelabuttUserSetting> get settings => [
-    basePointsValue,
-    logicalAdvancementModifier,
-    usefulModifier,
-    trapModifier,
-    trackedPlayer,
-  ];
+  set value(double val) {
+    if (maxValue != null && val > maxValue!) {
+      value = maxValue!;
+    } else if (minValue != null && val < minValue!) {
+      value = minValue!;
+    } else {
+      value = val;
+    }
+  }
 }
 
-class ArchipelabuttUserSetting<T> {
-  final String label;
-  T value;
-
-  ArchipelabuttUserSetting(this.value, this.label);
-}
-
-class ArchipelabuttDoubleSetting extends ArchipelabuttUserSetting<double> {
-  final double? maxValue;
-  final double? minValue;
-
-  ArchipelabuttDoubleSetting(
-    super.initialValue,
-    super.label, [
-    this.minValue,
-    this.maxValue,
-  ]);
-}
-
-class ArchipelabuttListSetting<T> extends ArchipelabuttUserSetting<T> {
-  final List<T> _possibleValues;
-  List<T> get possibleValues => UnmodifiableListView(_possibleValues);
-
-  List<T> get settings => UnmodifiableListView(_possibleValues);
-
-  ArchipelabuttListSetting(super.value, super.label, this._possibleValues);
+class PlayerSetting extends ArchipelabuttUserSetting<Player?> {
+  PlayerSetting(super.name, super.value);
 }
