@@ -79,12 +79,15 @@ class _ArchipelagoConnectionSettingsState
               Row(
                 children: [
                   FilledButton(
-                    onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        _formKey.currentState!.save();
-                        state.connect();
-                      }
-                    },
+                    onPressed:
+                        state.connected
+                            ? () {
+                              if (_formKey.currentState!.validate()) {
+                                _formKey.currentState!.save();
+                                state.connect();
+                              }
+                            }
+                            : null,
                     child: Text('Connect'),
                   ),
                   OutlinedButton(onPressed: () {}, child: Text('Disconnect')),

@@ -20,6 +20,9 @@ class ButtplugConnection with ChangeNotifier {
   ButtplugConnection();
 
   Future<void> connect() async {
+    if (connected) {
+      Error();
+    }
     final uri = Uri(host: host, port: port, scheme: 'ws');
     // TODO: Make this do something
     // ButtplugWebSocketClientConnector doesn't actually do anything with the address, it's hardcoded to connect to ws://127.0.0.1:1245/
@@ -32,11 +35,13 @@ class ButtplugConnection with ChangeNotifier {
       log('Connected to Buttplug server', level: Level.INFO.value);
       this.client = client;
       _connected = true;
-      await _streamController.addStream(client.eventStream);
-      log('Disconnected from Buttplug server', level: Level.INFO.value);
-      _connected = false;
+      notifyListeners();
+      _streamController.addStream(client.eventStream).whenComplete(() {
+        log('Disconnected from Buttplug server', level: Level.INFO.value);
+        _connected = false;
+        notifyListeners();
+      });
     } catch (e) {
-      //TODO: Update buttplug_dart dependency, when it updates, so this exception can actually be caught
       log('Connection failed.', error: e, level: Level.SEVERE.value);
       rethrow;
     }

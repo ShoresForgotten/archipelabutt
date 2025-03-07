@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import 'state/archipelabutt_device.dart';
 
+// TODO: Make a simple "burst" setting with intensity and duration, then this can probably be called done (at least for a public release)
 class ButtplugDeviceSettings extends StatefulWidget {
   const ButtplugDeviceSettings({super.key});
 
@@ -138,7 +139,9 @@ class _ButtplugStrategySelectionState
           Divider(),
           FilledButton(
             onPressed: () {
-              _strategySettingsFormKey.currentState?.save();
+              if (_strategySettingsFormKey.currentState?.validate() ?? false) {
+                _strategySettingsFormKey.currentState?.save();
+              }
             },
             child: Text('Save settings'),
           ),
@@ -235,14 +238,12 @@ class _ArchipelabuttDoubleSettingWidget extends StatelessWidget {
       decoration: InputDecoration(label: Text(setting.name)),
       validator: (String? input) {
         if (input != null) {
-          final parsed = double.tryParse(input);
-          if (parsed != null) {
-            if (setting.maxValue != null && parsed > setting.maxValue!) {
-              // TODO: This better
-              return 'Input is larger than max value';
-            } else if (setting.minValue != null && parsed < setting.minValue!) {
-              return 'Input is smaller than minimum value';
-            }
+          final parsed = double.parse(input);
+          if (setting.maxValue != null && parsed > setting.maxValue!) {
+            // TODO: This better
+            return 'Input is larger than max value';
+          } else if (setting.minValue != null && parsed < setting.minValue!) {
+            return 'Input is smaller than minimum value';
           }
         } else {
           return 'Field cannot be empty';
