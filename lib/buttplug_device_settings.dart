@@ -1,6 +1,7 @@
 import 'package:archipelabutt/state/archipelago_connection.dart';
 import 'package:archipelago/archipelago.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import 'state/archipelabutt_device.dart';
@@ -33,41 +34,45 @@ class _ButtplugDeviceSettingsState extends State<ButtplugDeviceSettings> {
         return Column(
           children: [
             Row(
+              // TODO: Make this stack vertically if needed
               children: [
-                DropdownMenu<ArchipelabuttDevice>(
-                  dropdownMenuEntries:
-                      value.devices.values
-                          .map(
-                            (x) => DropdownMenuEntry(value: x, label: x.name),
-                          )
-                          .toList(),
-                  onSelected: (ArchipelabuttDevice? device) {
-                    setState(() {
-                      selectedDevice = device;
-                    });
-                  },
+                Expanded(
+                  child: DropdownMenu<ArchipelabuttDevice>(
+                    dropdownMenuEntries:
+                        value.devices.values
+                            .map(
+                              (x) => DropdownMenuEntry(value: x, label: x.name),
+                            )
+                            .toList(),
+                    onSelected: (ArchipelabuttDevice? device) {
+                      setState(() {
+                        selectedDevice = device;
+                      });
+                    },
+                  ),
                 ),
-                DropdownMenu<ArchipelabuttDeviceFeature>(
-                  dropdownMenuEntries:
-                      features
-                          .map(
-                            (e) => DropdownMenuEntry(
-                              value: e,
-                              label: e.description,
-                            ),
-                          )
-                          .toList(),
-                  onSelected: (ArchipelabuttDeviceFeature? value) {
-                    setState(() {
-                      selectedFeature = value;
-                    });
-                  },
+                Expanded(
+                  child: DropdownMenu<ArchipelabuttDeviceFeature>(
+                    dropdownMenuEntries:
+                        features
+                            .map(
+                              (e) => DropdownMenuEntry(
+                                value: e,
+                                label: e.description,
+                              ),
+                            )
+                            .toList(),
+                    onSelected: (ArchipelabuttDeviceFeature? value) {
+                      setState(() {
+                        selectedFeature = value;
+                      });
+                    },
+                  ),
                 ),
               ],
             ),
             Divider(),
             _ButtplugStrategySelection(feature: selectedFeature),
-            Divider(),
           ],
         );
       },
@@ -75,30 +80,68 @@ class _ButtplugDeviceSettingsState extends State<ButtplugDeviceSettings> {
   }
 }
 
-class _ButtplugStrategySelection extends StatelessWidget {
+class _ButtplugStrategySelection extends StatefulWidget {
   final ArchipelabuttDeviceFeature? feature;
 
   const _ButtplugStrategySelection({required this.feature});
+  @override
+  State<_ButtplugStrategySelection> createState() {
+    return _ButtplugStrategySelectionState();
+  }
+}
+
+class _ButtplugStrategySelectionState
+    extends State<_ButtplugStrategySelection> {
+  ArchipelabuttStrategy? selectedStrategy;
+
+  final GlobalKey<FormState> _strategySettingsFormKey = GlobalKey<FormState>();
 
   @override
   Widget build(BuildContext context) {
-    if (feature != null) {
+    if (widget.feature != null) {
+      selectedStrategy = widget.feature!.activeStrategy;
       return Column(
         children: [
-          DropdownMenu<ArchipelabuttStrategy>(
-            dropdownMenuEntries:
-                feature!.availableStrategies
-                    .map((x) => DropdownMenuEntry(label: x.name, value: x))
-                    .toList(),
-            onSelected: (value) {
-              if (value != null) {
-                feature!.activeStrategy = value;
-              }
-            },
-            initialSelection: feature!.activeStrategy,
+          Row(
+            children: [
+              Expanded(
+                child: DropdownMenu<ArchipelabuttStrategy>(
+                  dropdownMenuEntries:
+                      widget.feature!.availableStrategies
+                          .map(
+                            (x) => DropdownMenuEntry(label: x.name, value: x),
+                          )
+                          .toList(),
+                  onSelected: (value) {
+                    if (value != null) {
+                      selectedStrategy = value;
+                    }
+                  },
+                  initialSelection: widget.feature!.activeStrategy,
+                ),
+              ),
+              FilledButton(
+                onPressed: () {
+                  if (selectedStrategy != null) {
+                    widget.feature!.activeStrategy = selectedStrategy!;
+                  }
+                },
+                child: Text('Set Strategy'),
+              ),
+            ],
           ),
           Divider(),
-          _ButtplugStrategySettings(strategy: feature!.activeStrategy),
+          _ButtplugStrategySettings(
+            strategy: selectedStrategy!,
+            formKey: _strategySettingsFormKey,
+          ),
+          Divider(),
+          FilledButton(
+            onPressed: () {
+              _strategySettingsFormKey.currentState?.save();
+            },
+            child: Text('Save settings'),
+          ),
         ],
       );
     } else {
@@ -109,12 +152,17 @@ class _ButtplugStrategySelection extends StatelessWidget {
 
 class _ButtplugStrategySettings extends StatelessWidget {
   final ArchipelabuttStrategy strategy;
+  final GlobalKey<FormState> formKey;
 
-  const _ButtplugStrategySettings({required this.strategy});
+  const _ButtplugStrategySettings({
+    required this.strategy,
+    required this.formKey,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Form(
+      autovalidateMode: AutovalidateMode.always,
       child: Column(
         children:
             strategy.settings
@@ -128,7 +176,7 @@ class _ButtplugStrategySettings extends StatelessWidget {
 class _ArchipelabuttUserSettingWidget extends StatelessWidget {
   final ArchipelabuttUserSetting setting;
 
-  const _ArchipelabuttUserSettingWidget({super.key, required this.setting});
+  const _ArchipelabuttUserSettingWidget({required this.setting});
 
   @override
   Widget build(BuildContext context) {
@@ -148,7 +196,7 @@ class _ArchipelabuttUserSettingWidget extends StatelessWidget {
 class _ArchipelabuttPlayerSettingWidget extends StatelessWidget {
   final PlayerSetting setting;
 
-  const _ArchipelabuttPlayerSettingWidget({super.key, required this.setting});
+  const _ArchipelabuttPlayerSettingWidget({required this.setting});
 
   @override
   Widget build(BuildContext context) {
@@ -157,7 +205,7 @@ class _ArchipelabuttPlayerSettingWidget extends StatelessWidget {
       builder: (context, value, child) {
         return FormField<Player>(
           builder: (field) {
-            return DropdownMenu(
+            return DropdownMenu<Player>(
               dropdownMenuEntries:
                   value.client?.players
                       .map((e) => DropdownMenuEntry(value: e, label: e.name))
@@ -175,10 +223,11 @@ class _ArchipelabuttPlayerSettingWidget extends StatelessWidget {
   }
 }
 
+// TODO: Do another pass over this
 class _ArchipelabuttDoubleSettingWidget extends StatelessWidget {
   final DoubleSetting setting;
 
-  const _ArchipelabuttDoubleSettingWidget({super.key, required this.setting});
+  const _ArchipelabuttDoubleSettingWidget({required this.setting});
 
   @override
   Widget build(BuildContext context) {
@@ -194,17 +243,21 @@ class _ArchipelabuttDoubleSettingWidget extends StatelessWidget {
             } else if (setting.minValue != null && parsed < setting.minValue!) {
               return 'Input is smaller than minimum value';
             }
-          } else {
-            // TODO: Limit inputs
-            return 'Input is not a number';
           }
         } else {
           return 'Field cannot be empty';
         }
+        return null;
       },
       onSaved: (newValue) {
-        setting.value = double.parse(newValue!);
+        final parsed = double.tryParse(newValue!);
+        if (parsed != null) {
+          setting.value = parsed;
+        }
       },
+      inputFormatters: [
+        FilteringTextInputFormatter.allow(RegExp(r'^-?[0-9]*\.?[0-9]*')),
+      ],
       initialValue: setting.value.toString(),
     );
   }

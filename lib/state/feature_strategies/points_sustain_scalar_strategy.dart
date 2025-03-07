@@ -1,5 +1,5 @@
-import 'package:archipelabutt/feature_strategy/archipelabutt_points_system.dart';
-import 'package:archipelabutt/feature_strategy/check_points_system.dart';
+import 'package:archipelabutt/state/feature_strategies/archipelabutt_points_system.dart';
+import 'package:archipelabutt/state/feature_strategies/check_points_system.dart';
 import 'package:archipelabutt/state/archipelabutt_device.dart';
 import 'package:archipelago/archipelago.dart';
 import 'package:buttplug/buttplug.dart';

@@ -1,7 +1,6 @@
-import 'package:archipelabutt/feature_strategy/archipelabutt_points_system.dart';
+import 'package:archipelabutt/state/feature_strategies/archipelabutt_points_system.dart';
 import 'package:archipelabutt/state/archipelabutt_device.dart';
 import 'package:archipelago/archipelago.dart';
-import 'package:flutter/material.dart';
 
 class CheckPointsSystem implements ArchipelabuttPointsSystem {
   final DoubleSetting basePointsValue;

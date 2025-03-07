@@ -15,33 +15,31 @@ class ButtplugConnectionSettings extends StatefulWidget {
 class _ButtplugConnectionSettingsState
     extends State<ButtplugConnectionSettings> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _hostController = TextEditingController();
-  final TextEditingController _portController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     return Consumer<ButtplugConnection>(
       builder: (context, state, child) {
-        _hostController.text = state.host;
-        _portController.text = state.port.toString();
         return Form(
           key: _formKey,
           child: Column(
             children: [
               TextFormField(
                 decoration: InputDecoration(label: Text('Host')),
-                controller: _hostController,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Host cannot be empty.';
                   }
                   return null;
                 },
+                onSaved: (newValue) {
+                  state.host = newValue!;
+                },
+                initialValue: state.host,
               ),
               TextFormField(
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: InputDecoration(label: Text('Port')),
-                controller: _portController,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Port cannot be empty.';
@@ -52,14 +50,18 @@ class _ButtplugConnectionSettingsState
                   }
                   return null;
                 },
+                onSaved: (newValue) {
+                  final parsed = int.parse(newValue!);
+                  state.port = parsed;
+                },
+                initialValue: state.port.toString(),
               ),
               Row(
                 children: [
                   FilledButton(
                     onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        state.host = _hostController.text;
-                        state.port = int.parse(_portController.text);
+                      if (_formKey.currentState?.validate() ?? false) {
+                        _formKey.currentState!.save();
                         state.connect();
                       }
                     },

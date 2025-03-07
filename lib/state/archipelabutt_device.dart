@@ -1,11 +1,11 @@
 import 'dart:collection';
 
-import 'package:archipelabutt/feature_strategy/archipelabutt_points_system.dart';
-import 'package:archipelabutt/feature_strategy/points_sustain_scalar_strategy.dart';
+import 'package:archipelabutt/state/feature_strategies/points_sustain_scalar_strategy.dart';
 import 'package:archipelago/archipelago.dart';
 import 'package:buttplug/buttplug.dart';
 import 'package:flutter/material.dart';
 
+// TODO: Get devices on connect, remove all on disconnect
 class ArchipelabuttDeviceIndex with ChangeNotifier {
   final Map<int, ArchipelabuttDevice> _devices = {};
   UnmodifiableMapView<int, ArchipelabuttDevice> get devices =>
@@ -25,6 +25,18 @@ class ArchipelabuttDeviceIndex with ChangeNotifier {
     _devices.forEach((key, value) {
       value.handleEvent(event);
     });
+  }
+
+  void addMultipleDevices(List<ButtplugClientDevice> devices) {
+    for (final device in devices) {
+      _devices[device.index] = ArchipelabuttDevice(device);
+    }
+  }
+
+  void removeAllDevices() {
+    for (final key in devices.keys) {
+      devices.remove(key);
+    }
   }
 }
 

@@ -35,9 +35,9 @@ class ButtplugConnection with ChangeNotifier {
       await _streamController.addStream(client.eventStream);
       log('Disconnected from Buttplug server', level: Level.INFO.value);
       _connected = false;
-    } on SocketException catch (e) {
+    } catch (e) {
       //TODO: Update buttplug_dart dependency, when it updates, so this exception can actually be caught
-      log('Connection failed.', error: e, level: Level.INFO.value);
+      log('Connection failed.', error: e, level: Level.SEVERE.value);
       rethrow;
     }
   }
