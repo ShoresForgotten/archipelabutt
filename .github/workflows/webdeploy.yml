@@ -31,4 +31,4 @@ jobs:
       - name: Upload webapp
         uses: actions/upload-pages-artifact@v3
         with:
-          path: /build/web/
+          path: build/web/
