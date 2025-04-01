@@ -1,0 +1,34 @@
+name: Webapp deployment
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2.19.0
+        with:
+          channel: stable
+          flutter-version-file: pubspec.yaml
+          
+      - name: Get deps
+        run: flutter pub get
+        
+      - name: Build webapp
+        run: flutter build web
+
+      - name: Upload webapp
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: /build/web/
