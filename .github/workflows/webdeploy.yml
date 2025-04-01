@@ -23,7 +23,7 @@ jobs:
         uses: subosito/flutter-action@v2.19.0
         with:
           channel: stable
-          flutter-version: 3.19.0
+          flutter-version: 3.29.2
           
       - name: Get deps
         run: flutter pub get
