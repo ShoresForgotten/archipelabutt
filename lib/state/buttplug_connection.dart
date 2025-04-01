@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:developer';
-import 'dart:io';
 
 import 'package:buttplug/buttplug.dart';
 import 'package:flutter/material.dart';

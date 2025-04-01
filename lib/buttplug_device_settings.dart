@@ -1,79 +1,47 @@
 import 'package:archipelabutt/state/archipelago_connection.dart';
+import 'package:archipelabutt/state/device/device_controller.dart';
+import 'package:archipelabutt/state/device/device_manager.dart';
 import 'package:archipelago/archipelago.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import 'state/archipelabutt_device.dart';
+// TODO: Make all of this work
 
-// TODO: Make a simple "burst" setting with intensity and duration, then this can probably be called done (at least for a public release)
-class ButtplugDeviceSettings extends StatefulWidget {
-  const ButtplugDeviceSettings({super.key});
+class ButtplugDeviceSelection extends StatefulWidget {
+  const ButtplugDeviceSelection({super.key});
 
   @override
   State<StatefulWidget> createState() {
-    return _ButtplugDeviceSettingsState();
+    return _ButtplugDeviceSelectionState();
   }
 }
 
-class _ButtplugDeviceSettingsState extends State<ButtplugDeviceSettings> {
-  ArchipelabuttDevice? selectedDevice;
-  ArchipelabuttDeviceFeature? selectedFeature;
+class _ButtplugDeviceSelectionState extends State<ButtplugDeviceSelection> {
+  DeviceController? selectedDevice;
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ArchipelabuttDeviceIndex>(
+    return Consumer<DeviceManager>(
       builder: (context, value, child) {
         if (!value.devices.containsValue(selectedDevice)) {
           selectedDevice = null;
-          selectedFeature = null;
         }
-        final List<ArchipelabuttDeviceFeature> features = [];
-        selectedDevice?.scalarFeatures?.forEach(
-          (element) => features.add(element),
-        );
         return Column(
           children: [
-            Row(
-              // TODO: Make this stack vertically if needed
-              children: [
-                Expanded(
-                  child: DropdownMenu<ArchipelabuttDevice>(
-                    dropdownMenuEntries:
-                        value.devices.values
-                            .map(
-                              (x) => DropdownMenuEntry(value: x, label: x.name),
-                            )
-                            .toList(),
-                    onSelected: (ArchipelabuttDevice? device) {
-                      setState(() {
-                        selectedDevice = device;
-                      });
-                    },
-                  ),
-                ),
-                Expanded(
-                  child: DropdownMenu<ArchipelabuttDeviceFeature>(
-                    dropdownMenuEntries:
-                        features
-                            .map(
-                              (e) => DropdownMenuEntry(
-                                value: e,
-                                label: e.description,
-                              ),
-                            )
-                            .toList(),
-                    onSelected: (ArchipelabuttDeviceFeature? value) {
-                      setState(() {
-                        selectedFeature = value;
-                      });
-                    },
-                  ),
-                ),
-              ],
+            DropdownMenu<DeviceController>(
+              dropdownMenuEntries:
+                  value.devices.values
+                      .map((x) => DropdownMenuEntry(value: x, label: x.name))
+                      .toList(),
+              onSelected: (DeviceController? device) {
+                setState(() {
+                  selectedDevice = device;
+                });
+              },
             ),
             Divider(),
-            _ButtplugStrategySelection(feature: selectedFeature),
+            _ButtplugDeviceSettings(device: selectedDevice),
           ],
         );
       },
@@ -81,30 +49,75 @@ class _ButtplugDeviceSettingsState extends State<ButtplugDeviceSettings> {
   }
 }
 
-class _ButtplugStrategySelection extends StatefulWidget {
-  final ArchipelabuttDeviceFeature? feature;
+class _ButtplugDeviceSettings extends StatefulWidget {
+  final DeviceController? device;
+  // ignore: unused_element_parameter
+  const _ButtplugDeviceSettings({super.key, required this.device});
 
-  const _ButtplugStrategySelection({required this.feature});
   @override
-  State<_ButtplugStrategySelection> createState() {
-    return _ButtplugStrategySelectionState();
-  }
+  State<_ButtplugDeviceSettings> createState() =>
+      _ButtplugDeviceSettingsState();
 }
 
-class _ButtplugStrategySelectionState
-    extends State<_ButtplugStrategySelection> {
-  ArchipelabuttStrategy? selectedStrategy;
-
-  final GlobalKey<FormState> _strategySettingsFormKey = GlobalKey<FormState>();
-
+class _ButtplugDeviceSettingsState extends State<_ButtplugDeviceSettings> {
   @override
   Widget build(BuildContext context) {
-    if (widget.feature != null) {
-      selectedStrategy = widget.feature!.activeStrategy;
-      return Column(
-        children: [
-          Row(
+    return Consumer<ArchipelagoConnection>(
+      builder: (context, conn, child) {
+        if (widget.device != null) {
+          DeviceController device = widget.device!;
+          /*
+          List<Widget> scalarSettings =
+              device.hasScalar
+                  ? <Widget>[
+                    Text('Normal Check'),
+                    Slider(
+                      value: device.scalarStrategy.normalCheck.command,
+                      onChanged:
+                          (value) =>
+                              device.scalarStrategy.normalCheck.command = value,
+                      max: 1.0,
+                      min: 0.0,
+                    ),
+
+                    Divider(),
+                  ]
+                  : [];
+          List<Widget> linearSettings = device.hasLinear ? [] : [];
+          */
+          return Column(
             children: [
+              DropdownMenu<int>(
+                dropdownMenuEntries:
+                    conn.client?.players
+                        .where((x) => x.id != null)
+                        .map(
+                          (x) => DropdownMenuEntry(value: x.id!, label: x.name),
+                        )
+                        .toList() ??
+                    [],
+                initialSelection: device.scalarStrategy.trackedPlayer?.id,
+                onSelected: (value) {
+                  var player = conn.client?.players.firstWhereOrNull(
+                    (x) => x.id == value,
+                  );
+                  device.scalarStrategy.trackedPlayer = player;
+                  device.linearStrategy.trackedPlayer = player;
+                },
+              ),
+              Divider(),
+              //Column(children: scalarSettings),
+              //Column(children: linearSettings),
+            ],
+          );
+        } else {
+          return Placeholder();
+        }
+      },
+    );
+  }
+}
+/*
               Expanded(
                 child: DropdownMenu<ArchipelabuttStrategy>(
                   dropdownMenuEntries:
@@ -263,3 +276,4 @@ class _ArchipelabuttDoubleSettingWidget extends StatelessWidget {
     );
   }
 }
+*/

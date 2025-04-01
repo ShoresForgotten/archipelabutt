@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'state/state.dart';
-import 'state/archipelabutt_device.dart';
+import 'state/device/device_manager.dart';
 import 'state/archipelago_connection.dart';
 import 'state/buttplug_connection.dart';
 
@@ -68,7 +68,7 @@ class _HomePageState extends State<HomePage> {
           alignment: Alignment.center,
           child: MultiProvider(
             providers: [
-              ChangeNotifierProvider<ArchipelabuttDeviceIndex>(
+              ChangeNotifierProvider<DeviceManager>(
                 create: (_) => state.bpDevices,
               ),
               ChangeNotifierProvider<ArchipelagoConnection>(
@@ -84,7 +84,7 @@ class _HomePageState extends State<HomePage> {
             child: const TabBarView(
               children: [
                 ArchipelagoTextClient(),
-                ButtplugDeviceSettings(),
+                ButtplugDeviceSelection(),
                 ArchipelagoConnectionSettings(),
                 ButtplugConnectionSettings(),
                 LicensePage(),

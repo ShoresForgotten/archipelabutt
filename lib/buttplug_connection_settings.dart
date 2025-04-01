@@ -59,7 +59,9 @@ class _ButtplugConnectionSettingsState
               Row(
                 children: [
                   FilledButton(
-                    onPressed: () {
+                    onPressed:
+                    // TODO: Add state-based availability
+                    () {
                       if (_formKey.currentState?.validate() ?? false) {
                         _formKey.currentState!.save();
                         state.connect();
