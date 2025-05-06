@@ -1,7 +1,6 @@
 import 'package:archipelabutt/state/archipelago_connection.dart';
 import 'package:archipelabutt/state/device/device_controller.dart';
 import 'package:archipelabutt/state/device/device_manager.dart';
-import 'package:archipelago/archipelago.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -87,24 +86,7 @@ class _ButtplugDeviceSettingsState extends State<_ButtplugDeviceSettings> {
           */
           return Column(
             children: [
-              DropdownMenu<int>(
-                dropdownMenuEntries:
-                    conn.client?.players
-                        .where((x) => x.id != null)
-                        .map(
-                          (x) => DropdownMenuEntry(value: x.id!, label: x.name),
-                        )
-                        .toList() ??
-                    [],
-                initialSelection: device.scalarStrategy.trackedPlayer?.id,
-                onSelected: (value) {
-                  var player = conn.client?.players.firstWhereOrNull(
-                    (x) => x.id == value,
-                  );
-                  device.scalarStrategy.trackedPlayer = player;
-                  device.linearStrategy.trackedPlayer = player;
-                },
-              ),
+              Placeholder(),
               Divider(),
               //Column(children: scalarSettings),
               //Column(children: linearSettings),

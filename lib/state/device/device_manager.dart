@@ -1,7 +1,6 @@
 import 'dart:collection';
 
 import 'package:archipelabutt/state/device/device_controller.dart';
-import 'package:archipelago/archipelago.dart';
 import 'package:buttplug/buttplug.dart' as buttplug;
 import 'package:flutter/material.dart';
 
@@ -24,12 +23,6 @@ class DeviceManager with ChangeNotifier {
   void addMultipleDevices(List<buttplug.ButtplugClientDevice> devices) {
     for (final device in devices) {
       addDevice(device);
-    }
-  }
-
-  void handleArchipelagoEvent(ArchipelagoEvent event) {
-    for (final device in _devices.values) {
-      device.handleArchipelagoEvent(event);
     }
   }
 }

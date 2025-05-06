@@ -20,7 +20,8 @@ class ArchipelabuttState {
       if (event is RoomUpdate) {
         apConn.client?.applyRoomUpdate(event);
       }
-      bpDevices.handleArchipelagoEvent(event);
+      // TODO: Replace this functionality
+      //bpDevices.handleArchipelagoEvent(event);
     });
     bpConn.stream.listen((event) {
       log(event.toString(), level: Level.INFO.value);

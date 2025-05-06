@@ -3,6 +3,7 @@ import 'dart:developer';
 
 import 'package:buttplug/buttplug.dart' as buttplug;
 import 'package:collection/collection.dart';
+import 'package:logging/logging.dart';
 
 class Device {
   final buttplug.ButtplugClientDevice _device;
@@ -18,21 +19,22 @@ class Device {
   // TODO: Implement rotation
 
   Device(this._device) {
-    if (_device.name != 'Lovense Solace Pro') {
-      // The solace pro has both a position and oscillate feature in buttplug.io
-      // We're using the position, so we don't want the oscillation
+    // According to qdot in the buttplug.io discord, the presence of a linear command indicates that the device is a stroker, and any non-linear commands overlap with the linear commands
+    if (_device.messageAttributes.linearCmd != null &&
+        _device.messageAttributes.linearCmd!.isNotEmpty) {
+      final linearFeatures = _device.messageAttributes.linearCmd ?? [];
+      for (var (index, feature) in linearFeatures.indexed) {
+        _linearFeatureControllers.add(
+          LinearFeatureController(_device, index, feature),
+        );
+      }
+    } else {
       final scalarFeatures = _device.messageAttributes.scalarCmd ?? [];
       for (var (index, feature) in scalarFeatures.indexed) {
         _scalarFeatureControllers.add(
           ScalarFeatureController(_device, index, feature),
         );
       }
-    }
-    final linearFeatures = _device.messageAttributes.linearCmd ?? [];
-    for (var (index, feature) in linearFeatures.indexed) {
-      _linearFeatureControllers.add(
-        LinearFeatureController(_device, index, feature),
-      );
     }
   }
 
@@ -154,6 +156,7 @@ class LinearFeature extends DeviceFeature {
     final buttplug.LinearCommand command = buttplug.LinearCommand.setMap({
       _featureIndex: component,
     });
+    log('$pos, $speed', level: Level.INFO.value);
     _device.linear(command);
   }
 }

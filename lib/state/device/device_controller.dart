@@ -1,20 +1,13 @@
 import 'dart:async';
 import 'package:archipelabutt/state/device/device.dart';
-import 'package:archipelabutt/state/device/device_archipelago_strategy.dart';
-import 'package:archipelabutt/state/device/strategy_result.dart';
-import 'package:archipelago/archipelago.dart';
 import 'package:buttplug/buttplug.dart' as buttplug;
 
 class DeviceController {
   final Device _device;
   String get name => _device.name;
   String? get displayName => _device.displayName;
-
-  // TODO: Find a more appropriate place for some of the below
-  final DemoLinearStrategy linearStrategy = DemoLinearStrategy();
-  final DemoScalarStrategy scalarStrategy = DemoScalarStrategy();
-  Timer? linearCommandTimer;
-  Timer? scalarCommandTimer;
+  StreamSubscription<LinearCommand>? _linearSubscription;
+  StreamSubscription<double>? _scalarSubscription;
 
   bool hasLinear = false;
   bool hasScalar = false;
@@ -34,57 +27,30 @@ class DeviceController {
     return DeviceController._(device, scalar, linear);
   }
 
+  Future<void> setLinearSource(Stream<LinearCommand> linearStream) async {
+    await _linearSubscription?.cancel();
+    _linearSubscription = linearStream.listen(
+      (LinearCommand linearCommand) => _commandAllLinears(linearCommand),
+    );
+  }
+
+  Future<void> setScalarSource(Stream<double> scalarStream) async {
+    await _scalarSubscription?.cancel();
+    _scalarSubscription = scalarStream.listen(
+      (double scalarCommand) => _commandAllScalars(scalarCommand),
+    );
+  }
+
   void stop() {
-    linearCommandTimer?.cancel();
-    scalarCommandTimer?.cancel();
     _device.stop();
   }
 
-  void handleArchipelagoEvent(ArchipelagoEvent event) {
-    final linearCommand = linearStrategy.handleArchipelagoEvent(event);
-    if (linearCommand != null) {
-      _handleLinearStrategyResult(linearCommand);
-    }
-    final scalarCommand = scalarStrategy.handleArchipelagoEvent(event);
-    if (scalarCommand != null) {
-      _handleScalarStrategyResult(scalarCommand);
-    }
-  }
-
-  void _handleLinearStrategyResult(StrategyResult<LinearCommand> command) {
-    linearCommandTimer?.cancel();
-    _commandAllLinears(command.command);
-    switch (command) {
-      case TimedCommand():
-        linearCommandTimer = Timer(command.duration, () {
-          var command = linearStrategy.commandCompleted();
-          if (command != null) {
-            _handleLinearStrategyResult(command);
-          }
-        });
-        break;
-      case Command():
-        break;
-    }
-  }
-
-  void _handleScalarStrategyResult(StrategyResult<double> command) {
-    scalarCommandTimer?.cancel();
-    _commandAllScalars(command.command);
-    switch (command) {
-      case TimedCommand():
-        scalarCommandTimer = Timer(command.duration, () {
-          var command = scalarStrategy.commandCompleted();
-          if (command != null) {
-            _handleScalarStrategyResult(command);
-          }
-        });
-        break;
-      case Command():
-        break;
-    }
-  }
-
+  /*
+  It'd be neat to have support for feature-level granularity for strategies,
+  but as things are in the current version of buttplug.io, that'd be hard to do.
+  v4 of the spec plans to switch from message attributes to device features,
+  but that's not done yet. When it is, it'll be worth considering the above.
+  */
   void _commandAllLinears(LinearCommand command) {
     for (final controller in _device.linearFeatureControllers) {
       controller.setCommand(command);

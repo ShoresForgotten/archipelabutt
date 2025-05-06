@@ -1,104 +1,74 @@
+import 'dart:async';
+
 import 'package:archipelabutt/state/device/device.dart';
-import 'package:archipelabutt/state/device/strategy_result.dart';
 import 'package:archipelago/archipelago.dart';
 
-sealed class DeviceArchipelagoStrategy<T> {
-  StrategyResult<T>? handleArchipelagoEvent(ArchipelagoEvent event);
-  StrategyResult<T>? commandCompleted();
+abstract interface class DeviceArchipelagoStrategy<T> {
+  Stream<T> get commands;
 }
 
-class DemoScalarStrategy extends DeviceArchipelagoStrategy<double> {
-  final normalCheck = TimedCommand(0.5, Duration(milliseconds: 5000));
-  final trapCheck = TimedCommand(0.0, Duration(milliseconds: 10000));
-  final usefulCheck = TimedCommand(0.7, Duration(milliseconds: 5000));
-  final advancementCheck = TimedCommand(1.0, Duration(milliseconds: 5000));
-  final usefulAdvancementCheck = TimedCommand(
-    1.0,
-    Duration(milliseconds: 10000),
-  );
-  final baseCommand = 0.3;
+class ScalarCheckReward implements DeviceArchipelagoStrategy<double> {
+  final double normalCheckIntensity = 0.5;
+  final Duration normalCheckDuration = Duration(milliseconds: 5000);
+  final double trapCheckIntensity = 0.0;
+  final Duration trapCheckDuration = Duration(milliseconds: 10000);
+  final double usefulCheckIntensity = 0.7;
+  final Duration usefulCheckDuration = Duration(milliseconds: 5000);
+  final double advancementCheckIntensity = 1.0;
+  final Duration advancementCheckDuration = Duration(milliseconds: 5000);
+  final double baseIntensity = 0.3;
   // TODO: Better place for this
   Player? trackedPlayer;
 
-  @override
-  StrategyResult<double>? handleArchipelagoEvent(ArchipelagoEvent event) {
-    if (event is ItemSend) {
-      final item = event.item;
-      if (item.player.id == trackedPlayer?.id) {
-        if (item.item.logicalAdvancement && item.item.useful) {
-          return usefulAdvancementCheck;
-        } else if (item.item.logicalAdvancement) {
-          return advancementCheck;
-        } else if (item.item.useful) {
-          return usefulCheck;
-        } else if (item.item.trap) {
-          return trapCheck;
-        } else {
-          return normalCheck;
-        }
-      }
-    }
-
-    return null;
-  }
+  final StreamController<double> _streamController =
+      StreamController.broadcast();
 
   @override
-  StrategyResult<double>? commandCompleted() {
-    return Command(baseCommand);
+  Stream<double> get commands => _streamController.stream;
+
+  ScalarCheckReward() {
+    // TODO: Set up stream
+    throw UnimplementedError();
   }
 }
 
-class DemoLinearStrategy extends DeviceArchipelagoStrategy<LinearCommand> {
-  final TimedCommand<LinearCommand> normalCheck = TimedCommand(
-    LinearCommand(0.5, 1.0, Duration(milliseconds: 750)),
-    Duration(milliseconds: 4500),
+class LinearCheckReward implements DeviceArchipelagoStrategy<LinearCommand> {
+  final LinearCommand normalCheckIntensity = LinearCommand(
+    0.5,
+    1.0,
+    Duration(milliseconds: 750),
   );
-  final TimedCommand<LinearCommand> trapCheck = TimedCommand(
-    LinearCommand(0.8, 1.0, Duration(milliseconds: 1000)),
-    Duration(milliseconds: 10000),
+  final Duration normalCheckDuration = Duration(milliseconds: 4500);
+  final LinearCommand trapCheckIntensity = LinearCommand(
+    0.8,
+    1.0,
+    Duration(milliseconds: 1000),
   );
-  final TimedCommand<LinearCommand> usefulCheck = TimedCommand(
-    LinearCommand(0.3, 1.0, Duration(milliseconds: 750)),
-    Duration(milliseconds: 4500),
+  final Duration trapCheckDuration = Duration(milliseconds: 10000);
+  final LinearCommand usefulCheckIntensity = LinearCommand(
+    0.3,
+    1.0,
+    Duration(milliseconds: 750),
   );
-  final TimedCommand<LinearCommand> advancementCheck = TimedCommand(
-    LinearCommand(0.5, 1.0, Duration(milliseconds: 500)),
-    Duration(milliseconds: 5000),
+  final Duration usefulCheckDuration = Duration(milliseconds: 4500);
+  final LinearCommand advancementCheckIntensity = LinearCommand(
+    0.5,
+    1.0,
+    Duration(milliseconds: 500),
   );
-  final TimedCommand<LinearCommand> usefulAdvancementCheck = TimedCommand(
-    LinearCommand(0.3, 1.0, Duration(milliseconds: 500)),
-    Duration(milliseconds: 5000),
-  );
+  final Duration advancementCheckDuration = Duration(milliseconds: 5000);
   final baseCommand = LinearCommand(0.5, 1.0, Duration(milliseconds: 1000));
   // TODO: Better place for this
   Player? trackedPlayer;
 
-  @override
-  StrategyResult<LinearCommand>? handleArchipelagoEvent(
-    ArchipelagoEvent event,
-  ) {
-    if (event is ItemSend) {
-      final item = event.item;
-      if (item.player.id == trackedPlayer?.id) {
-        if (item.item.logicalAdvancement && item.item.useful) {
-          return usefulAdvancementCheck;
-        } else if (item.item.logicalAdvancement) {
-          return advancementCheck;
-        } else if (item.item.useful) {
-          return usefulCheck;
-        } else if (item.item.trap) {
-          return trapCheck;
-        } else {
-          return normalCheck;
-        }
-      }
-    }
-
-    return null;
-  }
+  final StreamController<LinearCommand> _streamController =
+      StreamController.broadcast();
 
   @override
-  StrategyResult<LinearCommand>? commandCompleted() {
-    return Command(baseCommand);
+  Stream<LinearCommand> get commands => _streamController.stream;
+
+  LinearCheckReward() {
+    // TODO: Set up stream
+    throw UnimplementedError();
   }
 }
