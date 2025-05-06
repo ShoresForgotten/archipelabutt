@@ -37,8 +37,8 @@ class ArchipelagoConnection with ChangeNotifier {
       'Connecting to Archipelago server on $host:$port, username: $name.',
       level: Level.INFO.value,
     );
-    final connector = ArchipelagoConnector(host, port);
-    final client = await ArchipelagoClient.connect(
+    final connector = ArchipelagoProtocolConnector(host, port);
+    final client = await ArchipelagoClient.connectWithConnector(
       connector: connector,
       name: name,
       uuid: uuid,
