@@ -1,38 +1,14 @@
 import 'dart:async';
-import 'package:archipelabutt/state/device/device.dart';
-import 'package:buttplug/buttplug.dart' as buttplug;
+import 'dart:math';
+import 'package:buttplug/buttplug.dart';
 
 class DeviceController {
-  final Device _device;
+  final ButtplugClientDevice _device;
   String get name => _device.name;
   String? get displayName => _device.displayName;
-  StreamSubscription<LinearCommand>? _linearSubscription;
   StreamSubscription<double>? _scalarSubscription;
 
-  bool hasLinear = false;
-  bool hasScalar = false;
-
-  DeviceController._(this._device, this.hasScalar, this.hasLinear);
-
-  factory DeviceController(buttplug.ButtplugClientDevice bpDevice) {
-    Device device = Device(bpDevice);
-    bool scalar = false;
-    if (device.scalarFeatureControllers.isNotEmpty) {
-      scalar = true;
-    }
-    bool linear = false;
-    if (device.linearFeatureControllers.isNotEmpty) {
-      linear = true;
-    }
-    return DeviceController._(device, scalar, linear);
-  }
-
-  Future<void> setLinearSource(Stream<LinearCommand> linearStream) async {
-    await _linearSubscription?.cancel();
-    _linearSubscription = linearStream.listen(
-      (LinearCommand linearCommand) => _commandAllLinears(linearCommand),
-    );
-  }
+  DeviceController(this._device);
 
   Future<void> setScalarSource(Stream<double> scalarStream) async {
     await _scalarSubscription?.cancel();
@@ -42,24 +18,29 @@ class DeviceController {
   }
 
   void stop() {
-    _device.stop();
+    _commandAllScalars(0);
   }
 
   /*
-  It'd be neat to have support for feature-level granularity for strategies,
-  but as things are in the current version of buttplug.io, that'd be hard to do.
-  v4 of the spec plans to switch from message attributes to device features,
-  but that's not done yet. When it is, it'll be worth considering the above.
+  I'll do feature-level granularity eventually.
+  It'd also be nice for the purposes of step count UI stuff
   */
-  void _commandAllLinears(LinearCommand command) {
-    for (final controller in _device.linearFeatureControllers) {
-      controller.setCommand(command);
-    }
-  }
 
   void _commandAllScalars(double intensity) {
-    for (final controller in _device.scalarFeatureControllers) {
-      controller.setCommand(intensity);
+    for (final feature in _device.features) {
+      var actuator = feature.feature.actuator;
+      if (actuator != null) {
+        var stepCount = actuator.stepCount;
+        int level = max((stepCount * intensity).floor(), stepCount);
+        switch (feature.feature.featureType) {
+          case "Vibrate":
+            feature.vibrate(level);
+          case "Oscillate":
+            feature.oscillate(level);
+          default:
+            continue;
+        }
+      }
     }
   }
 }

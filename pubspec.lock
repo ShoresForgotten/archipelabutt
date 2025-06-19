@@ -118,11 +118,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: ws-dep-upgrade
-      resolved-ref: f3a7e344d3182a1865d1f1d1bf0b6262eb379967
-      url: "https://github.com/ShoresForgotten/buttplug_dart.git"
+      ref: v4-spec
+      resolved-ref: ed82d436b6b3fdca652c97e9b713c25403f85d64
+      url: "https://github.com/buttplugio/buttplug_dart.git"
     source: git
-    version: "0.0.4"
+    version: "1.0.0"
   characters:
     dependency: transitive
     description:
