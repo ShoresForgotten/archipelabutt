@@ -24,36 +24,46 @@ class _ArchipelagoConnectionSettingsState
           key: _formKey,
           child: Column(
             children: [
-              TextFormField(
-                decoration: InputDecoration(label: Text('Host')),
-                validator: (String? value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Host cannot be empty.';
-                  }
-                  return null;
-                },
-                onSaved: (newValue) {
-                  state.host = newValue!;
-                },
-                initialValue: state.host,
-              ),
-              TextFormField(
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: InputDecoration(label: Text('Port')),
-                validator: (String? value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Port cannot be empty';
-                  }
-                  final intValue = int.parse(value);
-                  if (intValue <= 0 || intValue > 65535) {
-                    return 'Invalid port';
-                  }
-                  return null;
-                },
-                onSaved: (newValue) {
-                  state.port = int.parse(newValue!);
-                },
-                initialValue: state.port.toString(),
+              Row(
+                children: [
+                  Flexible(
+                    flex: 3,
+                    child: TextFormField(
+                      decoration: InputDecoration(label: Text('Host')),
+                      validator: (String? value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Host cannot be empty.';
+                        }
+                        return null;
+                      },
+                      onSaved: (newValue) {
+                        state.host = newValue!;
+                      },
+                      initialValue: state.host,
+                    ),
+                  ),
+                  Flexible(
+                    flex: 1,
+                    child: TextFormField(
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      decoration: InputDecoration(label: Text('Port')),
+                      validator: (String? value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Port cannot be empty';
+                        }
+                        final intValue = int.parse(value);
+                        if (intValue <= 0 || intValue > 65535) {
+                          return 'Invalid port';
+                        }
+                        return null;
+                      },
+                      onSaved: (newValue) {
+                        state.port = int.parse(newValue!);
+                      },
+                      initialValue: state.port.toString(),
+                    ),
+                  ),
+                ],
               ),
               TextFormField(
                 decoration: InputDecoration(label: Text('Name')),
