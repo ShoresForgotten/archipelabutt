@@ -11,7 +11,7 @@ import 'buttplug_connection.dart';
 
 class ArchipelabuttState {
   final ArchipelagoConnection apConn;
-  final ButtplugConnection bpConn = ButtplugConnection();
+  ButtplugConnection? bpConn;
   Stream<ArchipelagoEvent> get apStream => apConn.stream;
   final DeviceManager bpDevices = DeviceManager();
 
@@ -23,7 +23,7 @@ class ArchipelabuttState {
       // TODO: Replace this functionality
       //bpDevices.handleArchipelagoEvent(event);
     });
-    bpConn.stream.listen((event) {
+    bpConn?.stream.listen((event) {
       log(event.toString(), level: Level.INFO.value);
       switch (event) {
         case DeviceAddedEvent():

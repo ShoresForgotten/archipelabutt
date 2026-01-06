@@ -13,35 +13,18 @@ class Device {
   final List<ScalarFeatureController> _scalarFeatureControllers = [];
   UnmodifiableListView<ScalarFeatureController> get scalarFeatureControllers =>
       UnmodifiableListView(_scalarFeatureControllers);
-  final List<LinearFeatureController> _linearFeatureControllers = [];
-  UnmodifiableListView<LinearFeatureController> get linearFeatureControllers =>
-      UnmodifiableListView(_linearFeatureControllers);
 
   Device(this._device) {
-    // According to qdot in the buttplug.io discord, the presence of a linear command indicates that the device is a stroker, and any non-linear commands overlap with the linear commands
-    if (_device.messageAttributes.linearCmd != null &&
-        _device.messageAttributes.linearCmd!.isNotEmpty) {
-      final linearFeatures = _device.messageAttributes.linearCmd ?? [];
-      for (var (index, feature) in linearFeatures.indexed) {
-        _linearFeatureControllers.add(
-          LinearFeatureController(_device, index, feature),
-        );
-      }
-    } else {
-      final scalarFeatures = _device.messageAttributes.scalarCmd ?? [];
-      for (var (index, feature) in scalarFeatures.indexed) {
-        _scalarFeatureControllers.add(
-          ScalarFeatureController(_device, index, feature),
-        );
-      }
+    final scalarFeatures = _device.messageAttributes.scalarCmd ?? [];
+    for (var (index, feature) in scalarFeatures.indexed) {
+      _scalarFeatureControllers.add(
+        ScalarFeatureController(_device, index, feature),
+      );
     }
   }
 
   void stop() {
     for (final feature in scalarFeatureControllers) {
-      feature.stop();
-    }
-    for (final feature in linearFeatureControllers) {
       feature.stop();
     }
   }
@@ -54,64 +37,6 @@ sealed class FeatureController<T extends DeviceFeature> {
   FeatureController(this._feature);
 
   void stop();
-}
-
-// TODO: Consider making a non-looping command type
-class LinearFeatureController extends FeatureController<LinearFeature> {
-  LinearCommand _currentCommand;
-  Timer? _nextCommand;
-  bool _toMin = false;
-
-  LinearFeatureController(
-    buttplug.ButtplugClientDevice device,
-    int featureIndex,
-    buttplug.ClientGenericDeviceMessageAttributes featureInfo,
-  ) : _currentCommand = LinearCommand(0.0, 1.0, Duration(milliseconds: 1000)),
-      super(LinearFeature(device, featureIndex, featureInfo));
-
-  void setCommand(LinearCommand command) {
-    _nextCommand?.cancel();
-    _currentCommand = command;
-    _runCommand();
-  }
-
-  void _runCommand() {
-    if (_toMin) {
-      _feature.goToPos(
-        _currentCommand.minPosition,
-        _currentCommand.speed.inMilliseconds,
-      );
-    } else {
-      _feature.goToPos(
-        _currentCommand.maxPosition,
-        _currentCommand.speed.inMilliseconds,
-      );
-    }
-    _nextCommand = Timer(_currentCommand.speed, () => _runCommand());
-    _toMin = !_toMin;
-  }
-
-  @override
-  void stop() {
-    _nextCommand?.cancel();
-  }
-}
-
-class LinearCommand {
-  final double minPosition;
-  final double maxPosition;
-  final Duration speed;
-
-  LinearCommand(this.minPosition, this.maxPosition, this.speed) {
-    if (minPosition > maxPosition ||
-        minPosition < 0.0 ||
-        minPosition > 1.0 ||
-        maxPosition < 0.0 ||
-        maxPosition > 1.0 ||
-        speed.inMilliseconds < 0) {
-      Error();
-    }
-  }
 }
 
 class ScalarFeatureController extends FeatureController<ScalarFeature> {
@@ -134,30 +59,12 @@ class ScalarFeatureController extends FeatureController<ScalarFeature> {
   }
 }
 
-// Rotation feature controller here
-
 sealed class DeviceFeature {
   final buttplug.ButtplugClientDevice _device;
   final buttplug.ClientGenericDeviceMessageAttributes _featureInfo;
   String get featureDescriptor => _featureInfo.featureDescriptor;
   final int _featureIndex;
   DeviceFeature(this._device, this._featureIndex, this._featureInfo);
-}
-
-class LinearFeature extends DeviceFeature {
-  LinearFeature(super.device, super.index, super.featureInfo);
-
-  void goToPos(double pos, int speed) {
-    final buttplug.LinearComponent component = buttplug.LinearComponent(
-      pos,
-      speed,
-    );
-    final buttplug.LinearCommand command = buttplug.LinearCommand.setMap({
-      _featureIndex: component,
-    });
-    log('$pos, $speed', level: Level.INFO.value);
-    _device.linear(command);
-  }
 }
 
 class ScalarFeature extends DeviceFeature {

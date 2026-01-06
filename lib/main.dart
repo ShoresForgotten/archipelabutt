@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'buttplug_connection_settings.dart';
+import 'buttplug_device_settings.dart';
+import 'state/archipelago_connection.dart';
+import 'state/buttplug_connection.dart';
 import 'state/state.dart';
 import 'state/device/device_manager.dart';
-
-import 'buttplug_device_settings.dart';
 
 void main() {
   runApp(const ArchipelabuttApp());
@@ -47,6 +49,20 @@ class _HomePageState extends State<HomePage> {
         ), // TODO: Maybe make this access the license information?
         actions: [
           // TODO: Add buttplug & archipelago connection widgets
+          IconButton(
+            icon: const Icon(Icons.power),
+            tooltip: 'Buttplug Connection',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute<ButtplugConnection>(
+                  builder: (context) => ButtplugConnectionSettingsPage(),
+                ),
+              ).then((value) {
+                // do something
+              });
+            },
+          ),
         ],
       ),
       body: ChangeNotifierProvider<DeviceManager>(
