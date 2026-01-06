@@ -3,11 +3,7 @@ import 'package:provider/provider.dart';
 
 import 'state/state.dart';
 import 'state/device/device_manager.dart';
-import 'state/archipelago_connection.dart';
-import 'state/buttplug_connection.dart';
 
-import 'archipelago_connection_settings.dart';
-import 'buttplug_connection_settings.dart';
 import 'buttplug_device_settings.dart';
 
 void main() {
@@ -53,13 +49,9 @@ class _HomePageState extends State<HomePage> {
           // TODO: Add buttplug & archipelago connection widgets
         ],
       ),
-      body: Container(
-        margin: EdgeInsets.all(8),
-        alignment: Alignment.center,
-        child: ChangeNotifierProvider<DeviceManager>(
-          create: (ctx) => DeviceManager(),
-          child: ButtplugSettings(),
-        ),
+      body: ChangeNotifierProvider<DeviceManager>(
+        create: (ctx) => DeviceManager(),
+        child: ButtplugSettings(),
       ),
     );
   }

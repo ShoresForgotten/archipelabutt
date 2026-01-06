@@ -1,4 +1,3 @@
-import 'package:archipelabutt/state/archipelago_connection.dart';
 import 'package:archipelabutt/state/device/device_controller.dart';
 import 'package:archipelabutt/state/device/device_manager.dart';
 import 'package:collection/collection.dart';
@@ -63,5 +62,6 @@ class _ButtplugDeviceSettingsState extends State<_ButtplugDeviceSettings> {
       return Text("No device selected");
     }
     DeviceController device = widget.device!;
+    return Placeholder();
   }
 }

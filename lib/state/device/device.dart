@@ -16,7 +16,6 @@ class Device {
   final List<LinearFeatureController> _linearFeatureControllers = [];
   UnmodifiableListView<LinearFeatureController> get linearFeatureControllers =>
       UnmodifiableListView(_linearFeatureControllers);
-  // TODO: Implement rotation
 
   Device(this._device) {
     // According to qdot in the buttplug.io discord, the presence of a linear command indicates that the device is a stroker, and any non-linear commands overlap with the linear commands
@@ -176,5 +175,3 @@ class ScalarFeature extends DeviceFeature {
     _device.scalar(command);
   }
 }
-
-// Rotation feature here
