@@ -1,6 +1,9 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'archipelago_connection_settings.dart';
 import 'buttplug_connection_settings.dart';
 import 'buttplug_device_settings.dart';
 import 'state/archipelago_connection.dart';
@@ -37,7 +40,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final ArchipelabuttState state = ArchipelabuttState('Bingus');
+  final ArchipelabuttState state = ArchipelabuttState();
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +62,25 @@ class _HomePageState extends State<HomePage> {
                   builder: (context) => ButtplugConnectionSettingsPage(),
                 ),
               ).then((value) {
-                // do something
+                if (value != null) state.bpConn = value;
+              });
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.people),
+            tooltip: 'Archipelago Connection',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute<ArchipelagoConnection>(
+                  //TODO: UUID generation
+                  builder:
+                      (context) => ArchipelagoConnectionSettingsPage(
+                        uuid: 'placeholder',
+                      ),
+                ),
+              ).then((value) {
+                if (value != null) state.apConn = value;
               });
             },
           ),

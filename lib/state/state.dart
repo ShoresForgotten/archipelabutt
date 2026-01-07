@@ -10,20 +10,16 @@ import 'archipelago_connection.dart';
 import 'buttplug_connection.dart';
 
 class ArchipelabuttState {
-  final ArchipelagoConnection apConn;
-  ButtplugConnection? bpConn;
-  Stream<ArchipelagoEvent> get apStream => apConn.stream;
+  ArchipelagoConnection? _apConn;
+  ButtplugConnection? _bpConn;
+  Stream<ArchipelagoEvent>? get apStream => _apConn?.stream;
   final DeviceManager bpDevices = DeviceManager();
 
-  ArchipelabuttState(String uuid) : apConn = ArchipelagoConnection(uuid) {
-    apConn.stream.listen((event) {
-      if (event is RoomUpdate) {
-        apConn.client?.applyRoomUpdate(event);
-      }
-      // TODO: Replace this functionality
-      //bpDevices.handleArchipelagoEvent(event);
-    });
-    bpConn?.stream.listen((event) {
+  ArchipelabuttState();
+
+  set bpConn(ButtplugConnection conn) {
+    bpDevices.clearDevices();
+    conn.stream.listen((event) {
       log(event.toString(), level: Level.INFO.value);
       switch (event) {
         case DeviceAddedEvent():
@@ -34,5 +30,11 @@ class ArchipelabuttState {
           break;
       }
     });
+    _bpConn = conn;
+  }
+
+  set apConn(ArchipelagoConnection conn) {
+    _apConn = conn;
+    // TODO: Send signals to devices
   }
 }

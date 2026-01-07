@@ -8,22 +8,26 @@ class ButtplugConnection {
   final ButtplugClient client;
   final String host;
   final int port;
-  final StreamController<ButtplugClientEvent> _streamController;
+  final StreamController<ButtplugClientEvent> _streamController =
+      StreamController.broadcast();
   Stream<ButtplugClientEvent> get stream => _streamController.stream;
+  bool _connected = true;
+  bool get connected => _connected;
 
-  ButtplugConnection._(
-    this.host,
-    this.port,
-    this._streamController,
-    this.client,
-  );
+  ButtplugConnection._(this.host, this.port, this.client) {
+    _streamController.addStream(client.eventStream).whenComplete(() {
+      _connected = false;
+      log('Connection to Buttplug server closed.', level: Level.INFO.value);
+    });
+  }
 
-  static Future<ButtplugConnection?> connect(String host, int port) async {
+  static Future<ButtplugConnection> connect({
+    required String host,
+    required int port,
+  }) async {
     final uri = Uri(host: host, port: port, scheme: 'ws');
     final ButtplugWebsocketClientConnector connector =
         ButtplugWebsocketClientConnector(uri.toString());
-    final StreamController<ButtplugClientEvent> streamController =
-        StreamController.broadcast();
     // TODO: Make this do something
     // ButtplugWebSocketClientConnector doesn't actually do anything with the address, it's hardcoded to connect to ws://127.0.0.1:1245/
     final ButtplugClient client = ButtplugClient('Archipelabutt');
@@ -31,13 +35,10 @@ class ButtplugConnection {
     try {
       await client.connect(connector);
       log('Connected to Buttplug server', level: Level.INFO.value);
-      streamController.addStream(client.eventStream).whenComplete(() {
-        log('Disconnected from Buttplug server', level: Level.INFO.value);
-      });
-      return ButtplugConnection._(host, port, streamController, client);
+      return ButtplugConnection._(host, port, client);
     } catch (e) {
       log('Connection failed.', error: e, level: Level.SEVERE.value);
-      rethrow;
+      rethrow; //TODO: Do we rethrow here?
     }
   }
 }

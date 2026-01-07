@@ -29,7 +29,7 @@ class _ButtplugConnectionFormState extends State<_ButtplugConnectionForm> {
   @override
   Widget build(BuildContext context) {
     if (connecting) {
-      return CircularProgressIndicator();
+      return CircularProgressIndicator(); //TODO: Better loading indicator
     } else {
       return Form(
         key: _formKey,
@@ -68,9 +68,12 @@ class _ButtplugConnectionFormState extends State<_ButtplugConnectionForm> {
             ),
             FilledButton(
               onPressed: () {
-                _formKey.currentState?.save();
                 if (_formKey.currentState?.validate() ?? false) {
-                  final bpConn = ButtplugConnection.connect(host, port);
+                  _formKey.currentState?.save();
+                  final bpConn = ButtplugConnection.connect(
+                    host: host,
+                    port: port,
+                  );
                   connecting = true;
                   bpConn.then((result) {
                     if (context.mounted) {
