@@ -25,4 +25,9 @@ class DeviceManager with ChangeNotifier {
       addDevice(device);
     }
   }
+
+  void clearDevices() {
+    _devices.clear();
+    notifyListeners();
+  }
 }

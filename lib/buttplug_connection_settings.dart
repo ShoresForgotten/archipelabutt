@@ -4,85 +4,101 @@ import 'package:provider/provider.dart';
 
 import 'state/buttplug_connection.dart';
 
-class ButtplugConnectionSettings extends StatefulWidget {
-  const ButtplugConnectionSettings({super.key});
+class _ButtplugConnectionForm extends StatefulWidget {
+  const _ButtplugConnectionForm({
+    super.key,
+    this.defaultHost = 'localhost',
+    this.defaultPort = 12345,
+  });
+
+  final String defaultHost;
+  final int defaultPort;
 
   @override
-  State<ButtplugConnectionSettings> createState() =>
-      _ButtplugConnectionSettingsState();
+  State<_ButtplugConnectionForm> createState() =>
+      _ButtplugConnectionFormState();
 }
 
-class _ButtplugConnectionSettingsState
-    extends State<ButtplugConnectionSettings> {
+class _ButtplugConnectionFormState extends State<_ButtplugConnectionForm> {
+  // These shouldn't be accessed before form save
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  late String host;
+  late int port;
+  bool connecting = false;
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ButtplugConnection>(
-      builder: (context, state, child) {
-        return Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              TextFormField(
-                decoration: InputDecoration(label: Text('Host')),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Host cannot be empty.';
-                  }
-                  return null;
-                },
-                onSaved: (newValue) {
-                  state.host = newValue!;
-                },
-                initialValue: state.host,
-              ),
-              TextFormField(
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: InputDecoration(label: Text('Port')),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Port cannot be empty.';
-                  }
-                  final intValue = int.parse(value);
-                  if (intValue <= 0 || intValue > 65535) {
-                    return 'Invalid port';
-                  }
-                  return null;
-                },
-                onSaved: (newValue) {
-                  final parsed = int.parse(newValue!);
-                  state.port = parsed;
-                },
-                initialValue: state.port.toString(),
-              ),
-              Row(
-                children: [
-                  FilledButton(
-                    onPressed:
-                    // TODO: Add state-based availability
-                    () {
-                      if (_formKey.currentState?.validate() ?? false) {
-                        _formKey.currentState!.save();
-                        state.connect();
-                      }
-                    },
-                    child: Text('Connect'),
-                  ),
-                  FilledButton(
-                    onPressed: () => state.client?.startScanning(),
-                    child: Text('Start scan'),
-                  ),
-                  FilledButton(
-                    onPressed: () => state.client?.stopScanning(),
-                    child: Text('Stop scan'),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
+    if (connecting) {
+      return CircularProgressIndicator(); //TODO: Better loading indicator
+    } else {
+      return Form(
+        key: _formKey,
+        child: Column(
+          children: [
+            TextFormField(
+              decoration: InputDecoration(label: Text('Host')),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Host cannot be empty.';
+                }
+                return null;
+              },
+              onSaved: (newValue) {
+                host = newValue ?? '';
+              },
+              initialValue: widget.defaultHost,
+            ),
+            TextFormField(
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              decoration: InputDecoration(label: Text('Port')),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Port cannot be empty.';
+                }
+                final intValue = int.parse(value);
+                if (intValue <= 0 || intValue > 65535) {
+                  return 'Invalid port';
+                }
+                return null;
+              },
+              initialValue: widget.defaultPort.toString(),
+              onSaved: (newValue) {
+                port = int.parse(newValue!);
+              },
+            ),
+            FilledButton(
+              onPressed: () {
+                if (_formKey.currentState?.validate() ?? false) {
+                  _formKey.currentState?.save();
+                  final bpConn = ButtplugConnection.connect(
+                    host: host,
+                    port: port,
+                  );
+                  connecting = true;
+                  bpConn.then((result) {
+                    if (context.mounted) {
+                      Navigator.pop(context, result);
+                    }
+                  }, onError: (_) => connecting = false); //TODO: Error handling
+                }
+              },
+              child: Text('Connect'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+}
+
+class ButtplugConnectionSettingsPage extends StatelessWidget {
+  const ButtplugConnectionSettingsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Buttplug Connection Settings')),
+      body: _ButtplugConnectionForm(),
     );
   }
 }
