@@ -10,8 +10,12 @@ class DeviceManager with ChangeNotifier {
   UnmodifiableMapView<int, DeviceController> get devices =>
       UnmodifiableMapView(_devices);
 
-  void addDevice(buttplug.ButtplugClientDevice device) {
+  void _addDevice(buttplug.ButtplugClientDevice device) {
     _devices[device.index] = DeviceController(device);
+  }
+
+  void addDevice(buttplug.ButtplugClientDevice device) {
+    _addDevice(device);
     notifyListeners();
   }
 
@@ -24,6 +28,7 @@ class DeviceManager with ChangeNotifier {
     for (final device in devices) {
       addDevice(device);
     }
+    notifyListeners();
   }
 
   void clearDevices() {

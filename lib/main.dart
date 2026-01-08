@@ -55,8 +55,9 @@ class _HomePageState extends State<HomePage> {
         ), // TODO: Maybe make this access the license information?
         actions: [ButtplugConnectionButton(), ArchipelagoConnectionButton()],
       ),
-      body: ChangeNotifierProvider<DeviceManager>(
-        create: (ctx) => DeviceManager(),
+      body: ChangeNotifierProvider<DeviceManager>.value(
+        value:
+            Provider.of<ArchipelabuttState>(context, listen: false).bpDevices,
         child: ButtplugSettings(),
       ),
     );
