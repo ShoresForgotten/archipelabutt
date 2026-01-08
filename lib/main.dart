@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -12,7 +10,12 @@ import 'state/state.dart';
 import 'state/device/device_manager.dart';
 
 void main() {
-  runApp(const ArchipelabuttApp());
+  runApp(
+    ChangeNotifierProvider<ArchipelabuttState>(
+      create: (context) => ArchipelabuttState(),
+      builder: (context, child) => ArchipelabuttApp(),
+    ),
+  );
 }
 
 class ArchipelabuttApp extends StatelessWidget {
@@ -50,46 +53,71 @@ class _HomePageState extends State<HomePage> {
         title: Text(
           widget.title,
         ), // TODO: Maybe make this access the license information?
-        actions: [
-          // TODO: Add buttplug & archipelago connection widgets
-          IconButton(
-            icon: const Icon(Icons.power),
-            tooltip: 'Buttplug Connection',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute<ButtplugConnection>(
-                  builder: (context) => ButtplugConnectionSettingsPage(),
-                ),
-              ).then((value) {
-                if (value != null) state.bpConn = value;
-              });
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.people),
-            tooltip: 'Archipelago Connection',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute<ArchipelagoConnection>(
-                  //TODO: UUID generation
-                  builder:
-                      (context) => ArchipelagoConnectionSettingsPage(
-                        uuid: 'placeholder',
-                      ),
-                ),
-              ).then((value) {
-                if (value != null) state.apConn = value;
-              });
-            },
-          ),
-        ],
+        actions: [ButtplugConnectionButton(), ArchipelagoConnectionButton()],
       ),
       body: ChangeNotifierProvider<DeviceManager>(
         create: (ctx) => DeviceManager(),
         child: ButtplugSettings(),
       ),
+    );
+  }
+}
+
+class ButtplugConnectionButton extends StatelessWidget {
+  const ButtplugConnectionButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon:
+          Provider.of<ArchipelabuttState>(context, listen: true).bpConnected
+              ? const Icon(Icons.power)
+              : const Icon(Icons.power), //TODO: Connected & Disconnected icons
+      tooltip: 'Buttplug Connection',
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute<ButtplugConnection>(
+            builder: (context) => ButtplugConnectionSettingsPage(),
+          ),
+        ).then((value) {
+          if (value != null && context.mounted) {
+            Provider.of<ArchipelabuttState>(context, listen: false).bpConn =
+                value;
+          }
+        });
+      },
+    );
+  }
+}
+
+class ArchipelagoConnectionButton extends StatelessWidget {
+  const ArchipelagoConnectionButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon:
+          Provider.of<ArchipelabuttState>(context, listen: true).apConnected
+              ? const Icon(Icons.people)
+              : const Icon(Icons.people), //TODO: Connected & Disconnected icons
+      tooltip: 'Archipelago Connection',
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute<ArchipelagoConnection>(
+            //TODO: UUID generation
+            builder:
+                (context) =>
+                    ArchipelagoConnectionSettingsPage(uuid: 'placeholder'),
+          ),
+        ).then((value) {
+          if (value != null && context.mounted) {
+            Provider.of<ArchipelabuttState>(context, listen: false).apConn =
+                value;
+          }
+        });
+      },
     );
   }
 }

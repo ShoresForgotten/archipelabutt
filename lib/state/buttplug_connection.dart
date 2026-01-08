@@ -2,9 +2,10 @@ import 'dart:async';
 import 'dart:developer';
 
 import 'package:buttplug/buttplug.dart';
+import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
 
-class ButtplugConnection {
+class ButtplugConnection with ChangeNotifier {
   final ButtplugClient client;
   final String host;
   final int port;
@@ -18,6 +19,7 @@ class ButtplugConnection {
     _streamController.addStream(client.eventStream).whenComplete(() {
       _connected = false;
       log('Connection to Buttplug server closed.', level: Level.INFO.value);
+      notifyListeners();
     });
   }
 

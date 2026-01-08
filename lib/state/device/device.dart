@@ -1,9 +1,5 @@
-import 'dart:async';
-import 'dart:developer';
-
 import 'package:buttplug/buttplug.dart' as buttplug;
 import 'package:collection/collection.dart';
-import 'package:logging/logging.dart';
 
 class Device {
   final buttplug.ButtplugClientDevice _device;

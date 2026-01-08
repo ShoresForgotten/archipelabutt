@@ -60,8 +60,31 @@ class _ButtplugDeviceSettingsState extends State<_ButtplugDeviceSettings> {
   Widget build(BuildContext context) {
     if (widget.device == null) {
       return Text("No device selected");
+    } else {
+      DeviceController device = widget.device!;
+      return Column(
+        children: [
+          SegmentedButton(
+            segments: const <ButtonSegment<CheckOption>>[
+              ButtonSegment<CheckOption>(
+                value: CheckOption.sent,
+                label: Text('Sent'),
+                icon: Icon(Icons.output),
+              ),
+              ButtonSegment<CheckOption>(
+                value: CheckOption.received,
+                label: Text('Received'),
+                icon: Icon(Icons.input),
+              ),
+            ],
+            selected: <CheckOption>{CheckOption.sent},
+          ),
+          Divider(),
+          Placeholder(),
+        ],
+      );
     }
-    DeviceController device = widget.device!;
-    return Placeholder();
   }
 }
+
+enum CheckOption { sent, received }

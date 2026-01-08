@@ -6,7 +6,7 @@ import 'package:archipelago/archipelago.dart';
 import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
 
-class ArchipelagoConnection {
+class ArchipelagoConnection with ChangeNotifier {
   final ArchipelagoClient client;
   final StreamController<ArchipelagoEvent> _streamController =
       StreamController.broadcast();
@@ -24,6 +24,7 @@ class ArchipelagoConnection {
     _streamController.addStream(client.stream).whenComplete(() {
       _connected = false;
       log('Connection to Archipelago server closed.', level: Level.INFO.value);
+      notifyListeners();
     });
     stream.listen((event) {
       if (event is RoomUpdate) {
