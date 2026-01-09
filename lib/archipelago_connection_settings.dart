@@ -151,6 +151,7 @@ class ArchipelagoConnectionSettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Archipelago Connection Settings')),
+      // TODO: reload previous settings
       body: _ArchipelagoConnectionForm(uuid: uuid),
     );
   }

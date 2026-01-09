@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:math';
+import 'dart:math' hide log;
 
 import 'package:archipelabutt/state/device/device.dart';
 import 'package:buttplug/buttplug.dart' as buttplug;
@@ -50,20 +50,21 @@ class ScalarFeatureController {
   ScalarFeatureController(this._feature);
 
   void activate(ItemType type) {
-    currentTimer?.cancel();
+    if (currentTimer?.isActive ?? false) {
+      currentTimer!.cancel();
+    }
     final info = activationInfo[type]!;
     _feature.setIntensity(info._intensity);
-    currentTimer = Timer(
-      Duration(milliseconds: info.duration),
-      () => _feature.setIntensity(0.0),
-    );
+    currentTimer = Timer(Duration(milliseconds: info.duration), () {
+      _feature.setIntensity(0.0);
+    });
   }
 }
 
 class ScalarActivationInfo {
   int _duration;
   set duration(int time) {
-    _duration = min(time, 100);
+    _duration = max(time, 100);
   }
 
   int get duration => _duration;
@@ -75,7 +76,7 @@ class ScalarActivationInfo {
   double get intensity => _intensity;
 
   ScalarActivationInfo({duration = 1000, intensity = 1.0})
-    : _duration = min(duration, 100),
+    : _duration = max(duration, 100),
       _intensity = clampDouble(intensity, 0.0, 1.0);
 }
 

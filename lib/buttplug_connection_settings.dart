@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
 
 import 'state/buttplug_connection.dart';
 
 class _ButtplugConnectionForm extends StatefulWidget {
   const _ButtplugConnectionForm({
-    super.key,
     this.defaultHost = 'localhost',
     this.defaultPort = 12345,
   });
@@ -98,6 +96,7 @@ class ButtplugConnectionSettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Buttplug Connection Settings')),
+      //TODO: Load previous settings
       body: _ButtplugConnectionForm(),
     );
   }

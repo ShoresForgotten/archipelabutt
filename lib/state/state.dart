@@ -61,6 +61,7 @@ class ArchipelabuttState with ChangeNotifier {
   }
 
   void _activateDevices(ItemSend message) {
+    log(message.toString(), level: 0);
     //TODO: Improve archipelago library so I don't have to do this like this
     final player = _apConn!.connectionParamaters.name;
     final item = message.item.item;
@@ -75,7 +76,7 @@ class ArchipelabuttState with ChangeNotifier {
     }
     for (final device in bpDevices.devices.values) {
       if (message.receiving.name == player) {
-        device.activate(CheckOption.sent, itemType);
+        device.activate(CheckOption.received, itemType);
       }
       if (message.item.player.name == player) {
         device.activate(CheckOption.sent, itemType);

@@ -37,13 +37,16 @@ class _ButtplugSettingsState extends State<ButtplugSettings> {
         // TODO: Make this work for portrait aspect ratios
         return Row(
           children: [
-            Expanded(child: ListView(children: deviceTiles)),
-            Expanded(
-              child:
-                  _selectedDevice != null
-                      ? _ButtplugDeviceSettings(device: _selectedDevice!)
-                      : Text('No device selected'),
-            ),
+            Expanded(flex: 1, child: ListView(children: deviceTiles)),
+            _selectedDevice != null
+                ? Expanded(
+                  flex: 2,
+                  child: _ButtplugDeviceSettings(device: _selectedDevice!),
+                )
+                : Flexible(
+                  flex: 2,
+                  child: Center(child: Text('No device selected')),
+                ),
           ],
         );
       },
@@ -53,7 +56,7 @@ class _ButtplugSettingsState extends State<ButtplugSettings> {
 
 class _ButtplugDeviceSettings extends StatefulWidget {
   final DeviceController device;
-  const _ButtplugDeviceSettings({super.key, required this.device});
+  const _ButtplugDeviceSettings({required this.device});
 
   @override
   State<_ButtplugDeviceSettings> createState() =>
@@ -134,7 +137,7 @@ class _ButtplugFeatureSettings extends StatelessWidget {
   }
   @override
   Widget build(BuildContext context) {
-    return Column(children: settings);
+    return Expanded(child: ListView(children: settings));
   }
 }
 
@@ -142,9 +145,9 @@ class _ButtplugScalarFeatureSetting extends StatefulWidget {
   final ScalarActivationInfo info;
   final String triggerName;
   final int stepCount;
+  final RegExp regex = RegExp(r'^[0-9]+\.?[0-9]*$');
 
   _ButtplugScalarFeatureSetting({
-    super.key,
     required this.info,
     required this.triggerName,
     required this.stepCount,
@@ -180,21 +183,47 @@ class _ButtplugScalarFeatureSettingState
       children: [
         Row(
           children: [
-            Text(widget.triggerName),
-            TextField(
-              controller: _durationController,
-              onChanged: (value) {
-                final tryParse = double.tryParse(value);
-                if (tryParse != null) {
-                  setState(
-                    () => widget.info.duration = (tryParse * 1000).toInt(),
-                  );
-                }
-              },
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(r'[0-9]+\.?[0-9]*'),
-                FilteringTextInputFormatter.singleLineFormatter,
-              ],
+            Flexible(
+              flex: 1,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(widget.triggerName),
+              ),
+            ),
+            Flexible(
+              flex: 1,
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: TextField(
+                  controller: _durationController,
+                  decoration: InputDecoration(
+                    hintText: 'Duration (in seconds)',
+                  ),
+                  // TODO: update value on focus change
+                  onSubmitted: (value) {
+                    final tryParse = double.tryParse(value);
+                    if (tryParse != null) {
+                      setState(() {
+                        widget.info.duration = (tryParse * 1000).toInt();
+                        _durationController.text =
+                            (widget.info.duration.toDouble() / 1000).toString();
+                      });
+                    }
+                  },
+
+                  inputFormatters: [
+                    TextInputFormatter.withFunction((oldValue, newValue) {
+                      if (widget.regex.hasMatch(newValue.text) ||
+                          newValue.text == '') {
+                        return newValue;
+                      } else {
+                        return oldValue;
+                      }
+                    }),
+                    FilteringTextInputFormatter.singleLineFormatter,
+                  ],
+                ),
+              ),
             ),
           ],
         ),

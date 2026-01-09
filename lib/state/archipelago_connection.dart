@@ -41,7 +41,7 @@ class ArchipelagoConnection with ChangeNotifier {
     required String uuid,
   }) async {
     log(
-      'Connecting to Archipelago server on $host:$port, username: $name., password $password',
+      'Connecting to Archipelago server on $host:$port, username: $name, password $password',
       level: Level.INFO.value,
     );
     final connector = ArchipelagoProtocolConnector(host, port);
