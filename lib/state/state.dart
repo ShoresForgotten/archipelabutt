@@ -1,8 +1,7 @@
 import 'dart:async';
-import 'dart:developer';
+import 'dart:math';
 
 import 'package:buttplug/buttplug.dart';
-import 'package:logging/logging.dart';
 import 'package:archipelago/archipelago.dart';
 import 'package:flutter/foundation.dart';
 
@@ -16,6 +15,7 @@ class ArchipelabuttState with ChangeNotifier {
   ButtplugConnection? _bpConn;
   Stream<ArchipelagoEvent>? get apStream => _apConn?.stream;
   final DeviceManager bpDevices = DeviceManager();
+  final String uuid = generateUUID();
 
   bool get apConnected => _apConn?.connected ?? false;
   bool get bpConnected => _bpConn?.connected ?? false;
@@ -24,7 +24,6 @@ class ArchipelabuttState with ChangeNotifier {
 
   set bpConn(ButtplugConnection conn) {
     conn.stream.listen((event) {
-      log(event.toString(), level: Level.INFO.value);
       switch (event) {
         case DeviceAddedEvent():
           bpDevices.addDevice(event.device);
@@ -61,7 +60,6 @@ class ArchipelabuttState with ChangeNotifier {
   }
 
   void _activateDevices(ItemSend message) {
-    log(message.toString(), level: 0);
     //TODO: Improve archipelago library so I don't have to do this like this
     final player = _apConn!.connectionParamaters.name;
     final item = message.item.item;
@@ -83,4 +81,27 @@ class ArchipelabuttState with ChangeNotifier {
       }
     }
   }
+}
+
+String generateUUID() {
+  // I know there's a library for uuids, but I don't like installing libraries unless they're really necessary
+  // There's also probably other, more efficient, ways of doing this
+  final rng = Random();
+  final String randomA1 = rng
+      .nextInt(1 << 31)
+      .toRadixString(16)
+      .padLeft(8, '0');
+  final String randomA2 = rng
+      .nextInt(1 << 15)
+      .toRadixString(16)
+      .padLeft(4, '0');
+  final String randomBAndVer = (rng.nextInt(1 << 11) | (1 << 14)).toRadixString(
+    16,
+  );
+  final String randomC1 = (rng.nextInt(1 << 29) | (1 << 31)).toRadixString(16);
+  final String randomC2 = rng
+      .nextInt(1 << 31)
+      .toRadixString(16)
+      .padLeft(8, '0');
+  return '$randomA1-$randomA2-$randomBAndVer-${randomC1.substring(0, 4)}-${randomC1.substring(4)}$randomC2';
 }

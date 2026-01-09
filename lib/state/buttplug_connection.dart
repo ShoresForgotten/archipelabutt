@@ -16,6 +16,8 @@ class ButtplugConnection with ChangeNotifier {
   bool get connected => _connected;
 
   ButtplugConnection._(this.host, this.port, this.client) {
+    // This doesn't actually do anything, since buttplug doesn't actually end the stream.
+    // TODO: fix this?
     _streamController.addStream(client.eventStream).whenComplete(() {
       _connected = false;
       log('Connection to Buttplug server closed.', level: Level.INFO.value);

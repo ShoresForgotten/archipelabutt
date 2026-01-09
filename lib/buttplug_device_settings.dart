@@ -5,8 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-// TODO: Make all of this work
-
 class ButtplugSettings extends StatefulWidget {
   const ButtplugSettings({super.key});
 
@@ -38,15 +36,16 @@ class _ButtplugSettingsState extends State<ButtplugSettings> {
         return Row(
           children: [
             Expanded(flex: 1, child: ListView(children: deviceTiles)),
-            _selectedDevice != null
-                ? Expanded(
-                  flex: 2,
-                  child: _ButtplugDeviceSettings(device: _selectedDevice!),
-                )
-                : Flexible(
-                  flex: 2,
-                  child: Center(child: Text('No device selected')),
-                ),
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 10.0),
+                child:
+                    _selectedDevice != null
+                        ? _ButtplugDeviceSettings(device: _selectedDevice!)
+                        : Center(child: Text('No device selected')),
+              ),
+            ),
           ],
         );
       },
@@ -80,40 +79,44 @@ class _ButtplugDeviceSettingsState extends State<_ButtplugDeviceSettings> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        SegmentedButton(
-          segments: const <ButtonSegment<CheckOption>>[
-            ButtonSegment<CheckOption>(
-              value: CheckOption.sent,
-              label: Text('Sent'),
-              icon: Icon(Icons.output),
-            ),
-            ButtonSegment<CheckOption>(
-              value: CheckOption.received,
-              label: Text('Received'),
-              icon: Icon(Icons.input),
-            ),
-            ButtonSegment<CheckOption>(
-              value: CheckOption.disabled,
-              label: Text('Disabled'),
-              icon: Icon(Icons.play_disabled),
-            ),
-          ],
-          selected: <CheckOption>{widget.device.activateOn},
-          onSelectionChanged:
-              (p0) => setState(() => widget.device.activateOn = p0.first),
-        ),
-        Divider(),
-        SegmentedButton(
-          segments: buttons,
-          selected: {selectedFeature},
-          onSelectionChanged:
-              (p0) => setState(() => selectedFeature = p0.first),
-        ),
-        Divider(),
-        _ButtplugFeatureSettings(selectedFeature),
-      ],
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 16.0, 0, 0),
+      child: Column(
+        spacing: 8.0,
+        children: [
+          SegmentedButton(
+            segments: const <ButtonSegment<CheckOption>>[
+              ButtonSegment<CheckOption>(
+                value: CheckOption.sent,
+                label: Text('Sent'),
+                icon: Icon(Icons.output),
+              ),
+              ButtonSegment<CheckOption>(
+                value: CheckOption.received,
+                label: Text('Received'),
+                icon: Icon(Icons.input),
+              ),
+              ButtonSegment<CheckOption>(
+                value: CheckOption.disabled,
+                label: Text('Disabled'),
+                icon: Icon(Icons.play_disabled),
+              ),
+            ],
+            selected: <CheckOption>{widget.device.activateOn},
+            onSelectionChanged:
+                (p0) => setState(() => widget.device.activateOn = p0.first),
+          ),
+          Divider(),
+          SegmentedButton(
+            segments: buttons,
+            selected: {selectedFeature},
+            onSelectionChanged:
+                (p0) => setState(() => selectedFeature = p0.first),
+          ),
+          Divider(),
+          _ButtplugFeatureSettings(selectedFeature),
+        ],
+      ),
     );
   }
 }
@@ -179,62 +182,67 @@ class _ButtplugScalarFeatureSettingState
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Flexible(
-              flex: 1,
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(widget.triggerName),
-              ),
-            ),
-            Flexible(
-              flex: 1,
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: TextField(
-                  controller: _durationController,
-                  decoration: InputDecoration(
-                    hintText: 'Duration (in seconds)',
-                  ),
-                  // TODO: update value on focus change
-                  onSubmitted: (value) {
-                    final tryParse = double.tryParse(value);
-                    if (tryParse != null) {
-                      setState(() {
-                        widget.info.duration = (tryParse * 1000).toInt();
-                        _durationController.text =
-                            (widget.info.duration.toDouble() / 1000).toString();
-                      });
-                    }
-                  },
-
-                  inputFormatters: [
-                    TextInputFormatter.withFunction((oldValue, newValue) {
-                      if (widget.regex.hasMatch(newValue.text) ||
-                          newValue.text == '') {
-                        return newValue;
-                      } else {
-                        return oldValue;
-                      }
-                    }),
-                    FilteringTextInputFormatter.singleLineFormatter,
-                  ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2.0),
+      child: Column(
+        spacing: 4.0,
+        children: [
+          Row(
+            children: [
+              Flexible(
+                flex: 1,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(widget.triggerName),
                 ),
               ),
-            ),
-          ],
-        ),
-        Slider(
-          value: widget.info.intensity,
-          onChanged: (x) => setState(() => widget.info.intensity = x),
-          min: 0.0,
-          max: 1.0,
-          divisions: widget.stepCount,
-        ),
-      ],
+              Flexible(
+                flex: 1,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: TextField(
+                    controller: _durationController,
+                    decoration: InputDecoration(
+                      hintText: 'Duration (in seconds)',
+                    ),
+                    // TODO: update value on focus change
+                    onSubmitted: (value) {
+                      final tryParse = double.tryParse(value);
+                      if (tryParse != null) {
+                        setState(() {
+                          widget.info.duration = (tryParse * 1000).toInt();
+                          _durationController.text =
+                              (widget.info.duration.toDouble() / 1000)
+                                  .toString();
+                        });
+                      }
+                    },
+
+                    inputFormatters: [
+                      TextInputFormatter.withFunction((oldValue, newValue) {
+                        if (widget.regex.hasMatch(newValue.text) ||
+                            newValue.text == '') {
+                          return newValue;
+                        } else {
+                          return oldValue;
+                        }
+                      }),
+                      FilteringTextInputFormatter.singleLineFormatter,
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          Slider(
+            value: widget.info.intensity,
+            onChanged: (x) => setState(() => widget.info.intensity = x),
+            min: 0.0,
+            max: 1.0,
+            divisions: widget.stepCount,
+          ),
+        ],
+      ),
     );
   }
 }

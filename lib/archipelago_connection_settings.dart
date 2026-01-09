@@ -39,11 +39,14 @@ class _ArchipelagoConnectionFormState
     if (connecting) {
       return CircularProgressIndicator(); //TODO: Better loading indicator
     } else {
+      // TODO: This shifts on validation rejection
       return Form(
         key: _formKey,
         child: Column(
+          spacing: 8.0,
           children: [
             Row(
+              spacing: 8.0,
               children: [
                 Flexible(
                   flex: 3,
@@ -150,9 +153,19 @@ class ArchipelagoConnectionSettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Archipelago Connection Settings')),
+      appBar: AppBar(
+        title: const Text('Archipelago Connection Settings'),
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+      ),
       // TODO: reload previous settings
-      body: _ArchipelagoConnectionForm(uuid: uuid),
+      body: Container(
+        padding: EdgeInsets.all(8.0),
+        alignment: Alignment.topCenter,
+        child: SizedBox(
+          width: 700.0,
+          child: _ArchipelagoConnectionForm(uuid: uuid),
+        ),
+      ),
     );
   }
 }

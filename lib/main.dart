@@ -53,7 +53,11 @@ class _HomePageState extends State<HomePage> {
         title: Text(
           widget.title,
         ), // TODO: Maybe make this access the license information?
-        actions: [ButtplugConnectionButton(), ArchipelagoConnectionButton()],
+        actions: [
+          ButtplugConnectionButton(),
+          ArchipelagoConnectionButton(),
+          LicenseInformationButton(),
+        ],
       ),
       body: ChangeNotifierProvider<DeviceManager>.value(
         value:
@@ -93,15 +97,15 @@ class ButtplugConnectionButton extends StatelessWidget {
 }
 
 class ArchipelagoConnectionButton extends StatelessWidget {
-  const ArchipelagoConnectionButton({super.key});
+  ArchipelagoConnectionButton({super.key});
 
   @override
   Widget build(BuildContext context) {
     return IconButton(
       icon:
           Provider.of<ArchipelabuttState>(context, listen: true).apConnected
-              ? const Icon(Icons.people)
-              : const Icon(Icons.people), //TODO: Connected & Disconnected icons
+              ? Icon(Icons.people)
+              : Icon(Icons.people), //TODO: Connected & Disconnected icons
       tooltip: 'Archipelago Connection',
       onPressed: () {
         Navigator.push(
@@ -109,8 +113,13 @@ class ArchipelagoConnectionButton extends StatelessWidget {
           MaterialPageRoute<ArchipelagoConnection>(
             //TODO: UUID generation
             builder:
-                (context) =>
-                    ArchipelagoConnectionSettingsPage(uuid: 'placeholder'),
+                (context) => ArchipelagoConnectionSettingsPage(
+                  uuid:
+                      Provider.of<ArchipelabuttState>(
+                        context,
+                        listen: false,
+                      ).uuid,
+                ),
           ),
         ).then((value) {
           if (value != null && context.mounted) {
@@ -119,6 +128,19 @@ class ArchipelagoConnectionButton extends StatelessWidget {
           }
         });
       },
+    );
+  }
+}
+
+class LicenseInformationButton extends StatelessWidget {
+  const LicenseInformationButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: Icon(Icons.text_snippet),
+      tooltip: 'License Information',
+      onPressed: () => showLicensePage(context: context),
     );
   }
 }
