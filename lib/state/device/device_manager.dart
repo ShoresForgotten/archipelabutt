@@ -4,7 +4,6 @@ import 'package:archipelabutt/state/device/device_controller.dart';
 import 'package:buttplug/buttplug.dart' as buttplug;
 import 'package:flutter/material.dart';
 
-// TODO: Get devices on connect, remove all on disconnect
 class DeviceManager with ChangeNotifier {
   final Map<int, DeviceController> _devices = {};
   UnmodifiableMapView<int, DeviceController> get devices =>

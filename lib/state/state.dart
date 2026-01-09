@@ -49,7 +49,6 @@ class ArchipelabuttState with ChangeNotifier {
 
   set apConn(ArchipelagoConnection conn) {
     _apConn = conn;
-    // TODO: Send signals to devices
     conn.stream.listen((event) {
       if (event is ItemSend) {
         _activateDevices(event);
@@ -60,8 +59,7 @@ class ArchipelabuttState with ChangeNotifier {
   }
 
   void _activateDevices(ItemSend message) {
-    //TODO: Improve archipelago library so I don't have to do this like this
-    final player = _apConn!.connectionParamaters.name;
+    final player = _apConn!.client.connectionPlayer;
     final item = message.item.item;
     //TODO: This better
     ItemType itemType = ItemType.regular;
@@ -73,10 +71,10 @@ class ArchipelabuttState with ChangeNotifier {
       itemType = ItemType.trap;
     }
     for (final device in bpDevices.devices.values) {
-      if (message.receiving.name == player) {
+      if (message.receiving == player) {
         device.activate(CheckOption.received, itemType);
       }
-      if (message.item.player.name == player) {
+      if (message.item.player == player) {
         device.activate(CheckOption.sent, itemType);
       }
     }

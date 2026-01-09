@@ -50,9 +50,7 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(
-          widget.title,
-        ), // TODO: Maybe make this access the license information?
+        title: Text(widget.title),
         actions: [
           ButtplugConnectionButton(),
           ArchipelagoConnectionButton(),
@@ -97,7 +95,7 @@ class ButtplugConnectionButton extends StatelessWidget {
 }
 
 class ArchipelagoConnectionButton extends StatelessWidget {
-  ArchipelagoConnectionButton({super.key});
+  const ArchipelagoConnectionButton({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -111,7 +109,6 @@ class ArchipelagoConnectionButton extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute<ArchipelagoConnection>(
-            //TODO: UUID generation
             builder:
                 (context) => ArchipelagoConnectionSettingsPage(
                   uuid:
