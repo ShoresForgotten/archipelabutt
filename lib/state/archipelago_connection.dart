@@ -73,7 +73,7 @@ class ArchipelagoConnection with ChangeNotifier {
         error: e,
         level: Level.SEVERE.value,
       );
-      rethrow; //TODO: To rethrow or not to rethrow?
+      rethrow;
     }
   }
 

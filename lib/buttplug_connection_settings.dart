@@ -22,74 +22,80 @@ class _ButtplugConnectionFormState extends State<_ButtplugConnectionForm> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late String host;
   late int port;
-  bool connecting = false;
 
   @override
   Widget build(BuildContext context) {
-    if (connecting) {
-      return Center(
-        child: CircularProgressIndicator(),
-      ); //TODO: Better loading indicator
-    } else {
-      // TODO: This shifts on validation rejection
-      return Form(
-        key: _formKey,
-        child: Column(
-          spacing: 8.0,
-          children: [
-            TextFormField(
-              decoration: InputDecoration(label: Text('Host')),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Host cannot be empty.';
-                }
-                return null;
-              },
-              onSaved: (newValue) {
-                host = newValue ?? '';
-              },
-              initialValue: widget.defaultHost,
-            ),
-            TextFormField(
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: InputDecoration(label: Text('Port')),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Port cannot be empty.';
-                }
-                final intValue = int.parse(value);
-                if (intValue <= 0 || intValue > 65535) {
-                  return 'Invalid port';
-                }
-                return null;
-              },
-              initialValue: widget.defaultPort.toString(),
-              onSaved: (newValue) {
-                port = int.parse(newValue!);
-              },
-            ),
-            FilledButton(
-              onPressed: () {
-                if (_formKey.currentState?.validate() ?? false) {
-                  _formKey.currentState?.save();
-                  final bpConn = ButtplugConnection.connect(
-                    host: host,
-                    port: port,
-                  );
-                  connecting = true;
-                  bpConn.then((result) {
+    //TODO: connecting indicator
+    // TODO: This shifts on validation rejection
+    return Form(
+      key: _formKey,
+      child: Column(
+        spacing: 8.0,
+        children: [
+          TextFormField(
+            decoration: InputDecoration(label: Text('Host')),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Host cannot be empty.';
+              }
+              return null;
+            },
+            onSaved: (newValue) {
+              host = newValue ?? '';
+            },
+            initialValue: widget.defaultHost,
+          ),
+          TextFormField(
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            decoration: InputDecoration(label: Text('Port')),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Port cannot be empty.';
+              }
+              final intValue = int.parse(value);
+              if (intValue <= 0 || intValue > 65535) {
+                return 'Invalid port';
+              }
+              return null;
+            },
+            initialValue: widget.defaultPort.toString(),
+            onSaved: (newValue) {
+              port = int.parse(newValue!);
+            },
+          ),
+          FilledButton(
+            onPressed: () {
+              if (_formKey.currentState?.validate() ?? false) {
+                _formKey.currentState?.save();
+                final bpConn = ButtplugConnection.connect(
+                  host: host,
+                  port: port,
+                );
+                bpConn.then(
+                  (result) {
                     if (context.mounted) {
                       Navigator.pop(context, result);
                     }
-                  }, onError: (_) => connecting = false); //TODO: Error handling
-                }
-              },
-              child: Text('Connect'),
-            ),
-          ],
-        ),
-      );
-    }
+                  },
+                  onError: (error) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Connection to buttplug server failed.',
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                );
+              }
+            },
+            child: Text('Connect'),
+          ),
+        ],
+      ),
+    );
   }
 }
 

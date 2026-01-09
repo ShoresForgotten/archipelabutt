@@ -42,7 +42,7 @@ class ButtplugConnection with ChangeNotifier {
       return ButtplugConnection._(host, port, client);
     } catch (e) {
       log('Connection failed.', error: e, level: Level.SEVERE.value);
-      rethrow; //TODO: Do we rethrow here?
+      rethrow;
     }
   }
 }

@@ -32,117 +32,122 @@ class _ArchipelagoConnectionFormState
   late int port;
   late String name;
   late String password;
-  bool connecting = false;
 
   @override
   Widget build(BuildContext context) {
-    if (connecting) {
-      return CircularProgressIndicator(); //TODO: Better loading indicator
-    } else {
-      // TODO: This shifts on validation rejection
-      return Form(
-        key: _formKey,
-        child: Column(
-          spacing: 8.0,
-          children: [
-            Row(
-              spacing: 8.0,
-              children: [
-                Flexible(
-                  flex: 3,
-                  child: TextFormField(
-                    decoration: InputDecoration(label: Text('Host')),
-                    validator: (String? value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Host cannot be empty.';
-                      }
-                      return null;
-                    },
-                    onSaved: (newValue) {
-                      host = newValue!;
-                    },
-                    initialValue: widget.defaultHost,
-                  ),
-                ),
-                Flexible(
-                  flex: 1,
-                  child: TextFormField(
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: InputDecoration(label: Text('Port')),
-                    validator: (String? value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Port cannot be empty';
-                      }
-                      final intValue = int.parse(value);
-                      if (intValue <= 0 || intValue > 65535) {
-                        return 'Invalid port';
-                      }
-                      return null;
-                    },
-                    onSaved: (newValue) {
-                      port = int.parse(newValue!);
-                    },
-                    initialValue: widget.defaultPort.toString(),
-                  ),
-                ),
-              ],
-            ),
-            TextFormField(
-              decoration: InputDecoration(label: Text('Name')),
-              validator: (String? value) {
-                if (value == null || value.isEmpty) {
-                  return 'Name cannot be empty';
-                }
-                return null;
-              },
-              onSaved: (newValue) {
-                name = newValue!;
-              },
-              initialValue: widget.defaultName,
-            ),
-            TextFormField(
-              decoration: InputDecoration(label: Text('Password')),
-              onSaved: (newValue) {
-                if (newValue != null) {
-                  password = newValue;
-                }
-              },
-              initialValue: widget.defaultPassword,
-            ),
-            Row(
-              children: [
-                FilledButton(
-                  onPressed:
-                  // TODO: Add state-based availability
-                  () {
-                    if (_formKey.currentState!.validate()) {
-                      _formKey.currentState!.save();
-                      final apConn = ArchipelagoConnection.connect(
-                        host: host,
-                        port: port,
-                        name: name,
-                        password: password == '' ? null : password,
-                        uuid: widget.uuid,
-                      );
-                      connecting = true;
-                      apConn.then(
-                        (result) {
-                          if (context.mounted) {
-                            Navigator.pop(context, result);
-                          }
-                        },
-                        onError: (_) => connecting = false,
-                      ); //TODO: Error handling
+    //TODO: Connecting indicator
+    // TODO: This shifts on validation rejection
+    return Form(
+      key: _formKey,
+      child: Column(
+        spacing: 8.0,
+        children: [
+          Row(
+            spacing: 8.0,
+            children: [
+              Flexible(
+                flex: 3,
+                child: TextFormField(
+                  decoration: InputDecoration(label: Text('Host')),
+                  validator: (String? value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Host cannot be empty.';
                     }
+                    return null;
                   },
-                  child: Text('Connect'),
+                  onSaved: (newValue) {
+                    host = newValue!;
+                  },
+                  initialValue: widget.defaultHost,
                 ),
-              ],
-            ),
-          ],
-        ),
-      );
-    }
+              ),
+              Flexible(
+                flex: 1,
+                child: TextFormField(
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: InputDecoration(label: Text('Port')),
+                  validator: (String? value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Port cannot be empty';
+                    }
+                    final intValue = int.parse(value);
+                    if (intValue <= 0 || intValue > 65535) {
+                      return 'Invalid port';
+                    }
+                    return null;
+                  },
+                  onSaved: (newValue) {
+                    port = int.parse(newValue!);
+                  },
+                  initialValue: widget.defaultPort.toString(),
+                ),
+              ),
+            ],
+          ),
+          TextFormField(
+            decoration: InputDecoration(label: Text('Name')),
+            validator: (String? value) {
+              if (value == null || value.isEmpty) {
+                return 'Name cannot be empty';
+              }
+              return null;
+            },
+            onSaved: (newValue) {
+              name = newValue!;
+            },
+            initialValue: widget.defaultName,
+          ),
+          TextFormField(
+            decoration: InputDecoration(label: Text('Password')),
+            onSaved: (newValue) {
+              if (newValue != null) {
+                password = newValue;
+              }
+            },
+            initialValue: widget.defaultPassword,
+          ),
+          Row(
+            children: [
+              FilledButton(
+                onPressed:
+                // TODO: Add state-based availability
+                () {
+                  if (_formKey.currentState!.validate()) {
+                    _formKey.currentState!.save();
+                    final apConn = ArchipelagoConnection.connect(
+                      host: host,
+                      port: port,
+                      name: name,
+                      password: password == '' ? null : password,
+                      uuid: widget.uuid,
+                    );
+                    apConn.then(
+                      (result) {
+                        if (context.mounted) {
+                          Navigator.pop(context, result);
+                        }
+                      },
+                      onError: (error) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Connection to Archipelago session failed',
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                    ); //TODO: Error handling
+                  }
+                },
+                child: Text('Connect'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
 

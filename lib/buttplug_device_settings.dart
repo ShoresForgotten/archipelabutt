@@ -63,12 +63,12 @@ class _ButtplugDeviceSettings extends StatefulWidget {
 }
 
 class _ButtplugDeviceSettingsState extends State<_ButtplugDeviceSettings> {
-  late ScalarFeatureController selectedFeature;
+  ScalarFeatureController? selectedFeature;
   final List<ButtonSegment<ScalarFeatureController>> buttons = [];
 
   @override
   void initState() {
-    selectedFeature = widget.device.features.first;
+    selectedFeature = widget.device.features.elementAtOrNull(0);
     for (final feature in widget.device.features) {
       buttons.add(
         ButtonSegment(value: feature, label: Text(feature.featureDescriptor)),
@@ -79,45 +79,53 @@ class _ButtplugDeviceSettingsState extends State<_ButtplugDeviceSettings> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(0, 16.0, 0, 0),
-      child: Column(
-        spacing: 8.0,
-        children: [
-          SegmentedButton(
-            segments: const <ButtonSegment<CheckOption>>[
-              ButtonSegment<CheckOption>(
-                value: CheckOption.sent,
-                label: Text('Sent'),
-                icon: Icon(Icons.output),
-              ),
-              ButtonSegment<CheckOption>(
-                value: CheckOption.received,
-                label: Text('Received'),
-                icon: Icon(Icons.input),
-              ),
-              ButtonSegment<CheckOption>(
-                value: CheckOption.disabled,
-                label: Text('Disabled'),
-                icon: Icon(Icons.play_disabled),
-              ),
-            ],
-            selected: <CheckOption>{widget.device.activateOn},
-            onSelectionChanged:
-                (p0) => setState(() => widget.device.activateOn = p0.first),
-          ),
-          Divider(),
-          SegmentedButton(
-            segments: buttons,
-            selected: {selectedFeature},
-            onSelectionChanged:
-                (p0) => setState(() => selectedFeature = p0.first),
-          ),
-          Divider(),
-          _ButtplugFeatureSettings(selectedFeature),
-        ],
-      ),
-    );
+    if (buttons.isEmpty) {
+      return Center(
+        child: Text(
+          "No supported features. Strokers aren't currently supported.",
+        ),
+      );
+    } else {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(0, 16.0, 0, 0),
+        child: Column(
+          spacing: 8.0,
+          children: [
+            SegmentedButton(
+              segments: const <ButtonSegment<CheckOption>>[
+                ButtonSegment<CheckOption>(
+                  value: CheckOption.sent,
+                  label: Text('Sent'),
+                  icon: Icon(Icons.output),
+                ),
+                ButtonSegment<CheckOption>(
+                  value: CheckOption.received,
+                  label: Text('Received'),
+                  icon: Icon(Icons.input),
+                ),
+                ButtonSegment<CheckOption>(
+                  value: CheckOption.disabled,
+                  label: Text('Disabled'),
+                  icon: Icon(Icons.play_disabled),
+                ),
+              ],
+              selected: <CheckOption>{widget.device.activateOn},
+              onSelectionChanged:
+                  (p0) => setState(() => widget.device.activateOn = p0.first),
+            ),
+            Divider(),
+            SegmentedButton(
+              segments: buttons,
+              selected: {selectedFeature},
+              onSelectionChanged:
+                  (p0) => setState(() => selectedFeature = p0.first),
+            ),
+            Divider(),
+            _ButtplugFeatureSettings(selectedFeature!),
+          ],
+        ),
+      );
+    }
   }
 }
 
