@@ -45,4 +45,8 @@ class ButtplugConnection with ChangeNotifier {
       rethrow;
     }
   }
+
+  void stopAllDevices() {
+    client.stopAllDevices();
+  }
 }

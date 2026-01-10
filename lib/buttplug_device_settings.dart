@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:archipelabutt/state/device/device_controller.dart';
 import 'package:archipelabutt/state/device/device_manager.dart';
 import 'package:collection/collection.dart';
@@ -19,47 +21,56 @@ class _ButtplugSettingsState extends State<ButtplugSettings> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<DeviceManager>(
-      builder: (context, value, child) {
-        if (!value.devices.containsValue(_selectedDevice)) {
-          _selectedDevice = null;
-        }
-        List<ListTile> deviceTiles =
-            value.devices.entries.sortedBy((x) => x.key).map((entry) {
-              return ListTile(
-                title: Text(entry.value.name),
-                onTap: () => setState(() => _selectedDevice = entry.value),
-                selected: _selectedDevice == entry.value,
-              );
-            }).toList();
-        // TODO: Make this work for portrait aspect ratios
-        return Row(
-          children: [
-            Expanded(flex: 1, child: ListView(children: deviceTiles)),
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 10.0),
-                child:
-                    _selectedDevice != null
-                        ? _ButtplugDeviceSettings(device: _selectedDevice!)
-                        : Center(child: Text('No device selected')),
-              ),
-            ),
-          ],
-        );
-      },
+    List<ListTile> deviceTiles =
+        Provider.of<DeviceManager>(context).devices.values.map((entry) {
+          return ListTile(
+            title: Text(entry.displayName ?? entry.name),
+            onTap: () {
+              setState(() => _selectedDevice = entry);
+            },
+            selected: _selectedDevice == entry,
+          );
+        }).toList();
+    // TODO: Make this work for portrait aspect ratios
+    return Row(
+      children: [
+        Expanded(flex: 1, child: ListView(children: deviceTiles)),
+        Expanded(
+          flex: 2,
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 10.0),
+            child: _SelectedDeviceSettings(device: _selectedDevice),
+          ),
+        ),
+      ],
     );
+  }
+}
+
+class _SelectedDeviceSettings extends StatelessWidget {
+  final DeviceController? _device;
+
+  const _SelectedDeviceSettings({device}) : _device = device;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_device != null &&
+        Provider.of<DeviceManager>(context).devices.containsValue(_device)) {
+      return _ButtplugDeviceSettings(device: _device, key: ObjectKey(_device));
+    } else {
+      return Center(child: Text('No device selected'));
+    }
   }
 }
 
 class _ButtplugDeviceSettings extends StatefulWidget {
   final DeviceController device;
-  const _ButtplugDeviceSettings({required this.device});
+  const _ButtplugDeviceSettings({super.key, required this.device});
 
   @override
-  State<_ButtplugDeviceSettings> createState() =>
-      _ButtplugDeviceSettingsState();
+  State<_ButtplugDeviceSettings> createState() {
+    return _ButtplugDeviceSettingsState();
+  }
 }
 
 class _ButtplugDeviceSettingsState extends State<_ButtplugDeviceSettings> {

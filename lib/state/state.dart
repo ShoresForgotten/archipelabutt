@@ -79,6 +79,10 @@ class ArchipelabuttState with ChangeNotifier {
       }
     }
   }
+
+  void stopAllDevices() {
+    _bpConn?.stopAllDevices();
+  }
 }
 
 String generateUUID() {
