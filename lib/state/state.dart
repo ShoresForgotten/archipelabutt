@@ -71,10 +71,10 @@ class ArchipelabuttState with ChangeNotifier {
       itemType = ItemType.trap;
     }
     for (final device in bpDevices.devices.values) {
-      if (message.receiving == player) {
+      if (message.receiving.id == player.id) {
         device.activate(CheckOption.received, itemType);
       }
-      if (message.item.player == player) {
+      if (message.item.player.id == player.id) {
         device.activate(CheckOption.sent, itemType);
       }
     }
