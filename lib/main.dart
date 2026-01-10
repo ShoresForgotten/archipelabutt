@@ -52,6 +52,7 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
         actions: [
+          EmergencyStopButton(),
           ButtplugConnectionButton(),
           ArchipelagoConnectionButton(),
           LicenseInformationButton(),
@@ -138,6 +139,24 @@ class LicenseInformationButton extends StatelessWidget {
       icon: Icon(Icons.text_snippet),
       tooltip: 'License Information',
       onPressed: () => showLicensePage(context: context),
+    );
+  }
+}
+
+class EmergencyStopButton extends StatelessWidget {
+  const EmergencyStopButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: Icon(Icons.stop_circle_sharp),
+      tooltip: 'Stop all devices',
+      onPressed: () {
+        Provider.of<ArchipelabuttState>(
+          context,
+          listen: false,
+        ).stopAllDevices();
+      },
     );
   }
 }
