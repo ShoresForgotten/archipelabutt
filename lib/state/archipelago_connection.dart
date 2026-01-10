@@ -21,6 +21,7 @@ class ArchipelagoConnection with ChangeNotifier {
     required this.connectionParamaters,
     required this.client,
   }) {
+    // TODO: This doesn't work yet
     _streamController.addStream(client.stream).whenComplete(() {
       _connected = false;
       log('Connection to Archipelago server closed.', level: Level.INFO.value);
